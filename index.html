@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shining Star Reunion – Alumni Community</title>
+<meta name="description" content="The official online reunion for Shining Star students. Reconnect with classmates, share memories and chat.">
+<meta property="og:title" content="Shining Star Reunion"><meta property="og:description" content="Reconnect with your Shining Star classmates.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⭐</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=Plus+Jakarta+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#0b1030;--panel:#141b45;--panel2:#1c2558;--line:#2b3677;--gold:#ffc857;--sky:#8fa8ff;--text:#eef1ff;--mute:#9aa6d8;--ok:#4be3a1;--bad:#ff7a8a;
+--serif:'Fraunces',Georgia,serif;--sans:'Plus Jakarta Sans',system-ui,sans-serif}
+*{box-sizing:border-box;margin:0}
+body{font:15px/1.55 var(--sans);background:radial-gradient(ellipse at 50% -20%,#27338a 0,var(--ink) 60%) fixed;color:var(--text);min-height:100vh;overflow-x:hidden}
+h1,h2,h3{font-family:var(--serif);line-height:1.15}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+#stars{position:fixed;inset:0;z-index:-1;pointer-events:none}
+.star{position:absolute;width:2px;height:2px;border-radius:50%;background:#fff;animation:tw var(--d) ease-in-out infinite alternate}
+@keyframes tw{from{opacity:.15;transform:scale(.6)}to{opacity:1;transform:scale(1.5)}}
+.shoot{position:absolute;top:8%;left:-10%;width:140px;height:2px;background:linear-gradient(90deg,transparent,var(--gold));transform:rotate(22deg);animation:shoot 2.4s .6s ease-out 1 both}
+@keyframes shoot{from{translate:0 0;opacity:1}to{translate:130vw 55vh;opacity:0}}
+.hidden{display:none!important}
+button{cursor:pointer;border:0}
+.btn{background:var(--gold);color:#241a00;font-weight:700;padding:.75rem 1.4rem;border-radius:999px;transition:transform .2s,box-shadow .2s}
+.btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px #ffc85744}.btn:active{transform:scale(.97)}
+.btn.ghost{background:transparent;color:var(--text);border:1px solid var(--line)}
+.btn.ghost:hover{box-shadow:none;border-color:var(--sky)}
+label{display:block;font-size:13px;color:var(--mute);margin:.9rem 0 .3rem}
+input,select,textarea{width:100%;background:var(--ink);border:1px solid var(--line);border-radius:12px;padding:.7rem .9rem;transition:border .2s,box-shadow .2s}
+input:focus,select:focus,textarea:focus{border-color:var(--gold);box-shadow:0 0 0 3px #ffc85722;outline:0}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
+.err{color:var(--bad);min-height:1.4em;margin-top:.8rem;font-size:14px}
+
+/* auth */
+#auth{min-height:100vh;display:grid;place-items:center;padding:1.2rem}
+.auth-wrap{width:min(460px,100%);animation:rise .9s cubic-bezier(.2,.8,.2,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(30px) scale(.97)}}
+.brand{text-align:center;margin-bottom:1.4rem}
+.brand .big{font-size:3rem;display:inline-block;animation:spin 9s linear infinite;filter:drop-shadow(0 0 18px #ffc857aa)}
+@keyframes spin{50%{transform:rotate(180deg) scale(1.15)}to{transform:rotate(360deg)}}
+.brand h1{font-size:2.3rem;font-weight:800}.brand p{color:var(--mute)}
+.card{background:linear-gradient(160deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:22px;padding:1.6rem}
+.tabs{display:flex;background:var(--ink);border-radius:999px;padding:4px;margin-bottom:.6rem;position:relative}
+.tabs button{flex:1;background:none;padding:.55rem;border-radius:999px;color:var(--mute);position:relative;z-index:1;transition:color .25s}
+.tabs button.on{color:#241a00;font-weight:700}
+.tabs i{position:absolute;top:4px;bottom:4px;left:4px;width:calc(50% - 4px);background:var(--gold);border-radius:999px;transition:transform .35s cubic-bezier(.5,1.4,.5,1)}
+.tabs.reg i{transform:translateX(100%)}
+.dots{display:flex;gap:6px;margin:1rem 0 .2rem}.dots b{flex:1;height:4px;border-radius:9px;background:var(--line);transition:background .4s}.dots b.on{background:var(--gold)}
+.step{animation:slide .45s cubic-bezier(.2,.8,.2,1)}
+@keyframes slide{from{opacity:0;transform:translateX(28px)}}
+.pills{display:flex;gap:.6rem}.pills label{flex:1;margin:0;cursor:pointer}
+.pills input{display:none}.pills span{display:block;text-align:center;padding:.65rem;border:1px solid var(--line);border-radius:12px;color:var(--text);transition:.2s}
+.pills input:checked+span{border-color:var(--gold);background:#ffc85718;color:var(--gold)}
+.nav2{display:flex;gap:.7rem;margin-top:1.3rem;justify-content:space-between}.nav2 .btn{flex:1}
+
+/* app */
+header{position:sticky;top:0;z-index:5;backdrop-filter:blur(14px);background:#0b1030cc;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:1rem;padding:.7rem 1.2rem}
+header .logo{font-family:var(--serif);font-weight:800;font-size:1.25rem;margin-right:auto}
+.nav button{background:none;color:var(--mute);padding:.5rem 1rem;border-radius:999px;transition:.2s}
+.nav button.on{background:var(--panel2);color:var(--gold)}.nav button:hover{color:var(--text)}
+.me{display:flex;align-items:center;gap:.5rem;cursor:pointer;background:none}
+.av{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-weight:700;color:#10153a;flex:none;position:relative;background:hsl(var(--h),75%,72%)}
+.av.sm{width:34px;height:34px;font-size:13px}.av.lg{width:84px;height:84px;font-size:2rem;margin:0 auto}
+.dot{position:absolute;right:-1px;bottom:-1px;width:12px;height:12px;border-radius:50%;background:#5d6593;border:2px solid var(--panel)}
+.dot.on{background:var(--ok);animation:pulse 1.8s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 #4be3a1aa}100%{box-shadow:0 0 0 9px #4be3a100}}
+main{max-width:1000px;margin:0 auto;padding:1.4rem}
+.view{animation:slide .45s cubic-bezier(.2,.8,.2,1)}
+.feed{max-width:640px;margin:0 auto}
+.compose textarea{resize:none;height:90px;border:0;background:transparent;padding:0}.compose textarea:focus{box-shadow:none}
+.compose .bar{display:flex;justify-content:space-between;align-items:center;margin-top:.7rem;color:var(--mute);font-size:13px}
+.post{margin-top:1rem;animation:pop .5s cubic-bezier(.3,1.5,.5,1) both}
+@keyframes pop{from{opacity:0;transform:translateY(-14px) scale(.96)}}
+.post .who{display:flex;gap:.8rem;align-items:center;cursor:pointer;margin-bottom:.7rem}
+.post .who small{display:block;color:var(--mute)}.post p{white-space:pre-wrap;word-break:break-word}
+.empty{text-align:center;color:var(--mute);padding:2.5rem 1rem}
+
+/* chat */
+.chat{display:grid;grid-template-columns:300px 1fr;height:calc(100vh - 140px);min-height:480px;padding:0;overflow:hidden}
+.side{border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+.side input{margin:.8rem;width:calc(100% - 1.6rem)}.list{overflow:auto;flex:1}
+.u{display:flex;gap:.7rem;align-items:center;padding:.7rem 1rem;cursor:pointer;transition:background .2s;width:100%;background:none;text-align:left}
+.u:hover,.u.on{background:var(--panel2)}.u div{min-width:0;flex:1}.u b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.u small{color:var(--mute)}
+.badge{background:var(--gold);color:#241a00;border-radius:99px;padding:0 .5rem;font-size:12px;font-weight:700;animation:pop .3s}
+.conv{display:flex;flex-direction:column;min-height:0}
+.ch{display:flex;align-items:center;gap:.8rem;padding:.8rem 1.1rem;border-bottom:1px solid var(--line);cursor:pointer}.ch:hover{background:#ffffff08}
+.ch small{color:var(--mute)}.ch small.on{color:var(--ok)}
+.back{display:none;background:none;font-size:1.4rem;color:var(--gold)}
+.msgs{flex:1;overflow:auto;padding:1rem;display:flex;flex-direction:column;gap:.45rem}
+.m{max-width:75%;padding:.55rem .9rem;border-radius:18px;background:var(--panel2);animation:pop .3s both;word-break:break-word;align-self:flex-start;border-bottom-left-radius:4px}
+.m.me{align-self:flex-end;background:var(--gold);color:#241a00;border-radius:18px 18px 4px 18px}
+.m time{display:block;font-size:11px;opacity:.6;text-align:right}
+.send{display:flex;gap:.6rem;padding:.8rem;border-top:1px solid var(--line)}.send input{border-radius:999px}
+.typing{height:18px;padding:0 1.2rem;font-size:12px;color:var(--mute)}
+.none{margin:auto;text-align:center;color:var(--mute)}
+
+/* modal */
+.modal{position:fixed;inset:0;background:#050818cc;display:grid;place-items:center;padding:1rem;z-index:20;animation:fade .25s}
+@keyframes fade{from{opacity:0}}
+.sheet{width:min(430px,100%);animation:rise .45s cubic-bezier(.3,1.4,.5,1) both;text-align:center;position:relative}
+.sheet h2{margin:.8rem 0 .2rem}.st{display:inline-flex;gap:.4rem;align-items:center;font-size:13px;color:var(--mute)}
+.st i{width:9px;height:9px;border-radius:50%;background:#5d6593}.st.on i{background:var(--ok)}.st.on{color:var(--ok)}
+dl{text-align:left;margin-top:1.2rem;display:grid;gap:.1rem}dt{font-size:12px;color:var(--mute);margin-top:.7rem}dd{font-weight:500;word-break:break-word}
+.x{position:absolute;right:1rem;top:1rem;background:none;font-size:1.4rem;color:var(--mute)}
+#toast{position:fixed;bottom:20px;left:50%;translate:-50% 0;background:var(--panel2);border:1px solid var(--gold);padding:.6rem 1.1rem;border-radius:99px;z-index:30;animation:rise .4s}
+@media(max-width:720px){.chat{grid-template-columns:1fr;height:calc(100vh - 120px)}.chat.open .side,.chat:not(.open) .conv{display:none}.back{display:block}
+.nav button{padding:.5rem .7rem}.me span{display:none}.row{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition:none!important}}
+
+.mute{color:var(--mute);margin:.3rem 0 .6rem}.lnk{text-align:center;margin-top:1rem;font-size:14px;color:var(--mute)}.lnk a,.lnkb{color:var(--gold);text-decoration:none}
+.lnkb{background:none;font-size:13px}.code{text-align:center;font-size:1.8rem;letter-spacing:.5rem;font-weight:700;margin:.8rem 0}
+#auth h3{font-size:1.4rem;margin-top:.4rem}
+.av img{width:100%;height:100%;border-radius:50%;object-fit:cover}
+.attach{margin:0;cursor:pointer;color:var(--sky);font-size:14px;padding:.4rem .7rem;border-radius:999px;transition:.2s}.attach:hover{background:var(--panel2)}
+#prev2{position:relative;margin-top:.6rem}#prev2 img,#prev2 video,.pm img,.pm video{width:100%;max-height:460px;object-fit:cover;border-radius:14px;display:block;background:#000}
+.pm{margin-top:.7rem}.pm:empty{display:none}.x2{position:absolute;top:8px;right:8px;width:30px;height:30px;border-radius:50%;background:#000a;color:#fff;font-size:18px}
+.stats{display:flex;justify-content:space-between;color:var(--mute);font-size:13px;margin:.8rem 0 .4rem;min-height:1.2em}
+.acts{display:flex;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:.2rem 0}
+.acts button{flex:1;background:none;color:var(--mute);padding:.55rem;border-radius:10px;transition:.2s}.acts button:hover{background:var(--panel2);color:var(--text)}
+.acts button.liked{color:var(--gold);font-weight:700;animation:pop .35s}
+.cm{margin-top:.8rem}.c{display:flex;gap:.6rem;margin-bottom:.6rem;animation:pop .3s both}
+.cb{background:var(--panel2);padding:.45rem .8rem;border-radius:16px;min-width:0}.cb b{display:block;font-size:13px}.cb span{word-break:break-word}
+.cf{display:flex;gap:.5rem}.cf input{border-radius:999px}.cf .btn{padding:.5rem 1rem}
+.chg{display:inline-block;margin-top:.5rem;padding:.4rem 1rem;font-size:13px;cursor:pointer}
+</style>
+</head>
+<body>
+<div id="stars"></div>
+
+<section id="auth" class="hidden">
+ <div class="auth-wrap">
+  <div class="brand"><div class="big">⭐</div><h1>Shining Star Reunion</h1><p>Find your classmates. Pick up where you left off.</p></div>
+  <div class="card">
+   <div class="tabs" id="tabs"><i></i><button class="on" data-t="login" type="button">Log in</button><button data-t="reg" type="button">Register</button></div>
+   <form id="login">
+    <label>Email</label><input name="email" type="email" required autocomplete="email">
+    <label>Password</label><input name="password" type="password" required autocomplete="current-password">
+    <div class="err"></div><button class="btn" style="width:100%">Log in</button>
+    <p class="lnk"><a href="#" id="toForgot">Forgot password?</a></p>
+   </form>
+   <form id="reg" class="hidden" novalidate>
+    <div class="dots"><b class="on"></b><b></b><b></b></div>
+    <div class="step" data-s="0">
+     <label>Full name</label><input name="name" required autocomplete="name">
+     <label>Email</label><input name="email" type="email" required autocomplete="email">
+     <label>Password (6+ characters)</label><input name="password" type="password" minlength="6" required autocomplete="new-password">
+    </div>
+    <div class="step hidden" data-s="1">
+     <div class="row"><div><label>Year you joined</label><input name="joinYear" type="number" min="1950" max="2100" placeholder="2008" required></div>
+      <div><label>Class you joined</label><input name="joinClass" placeholder="e.g. Baby class" required></div></div>
+     <div class="row"><div><label>Year you left</label><input name="leftYear" type="number" min="1950" max="2100" placeholder="2015" required></div>
+      <div><label>Class you left in</label><input name="leftClass" placeholder="e.g. Grade 6" required></div></div>
+    </div>
+    <div class="step hidden" data-s="2">
+     <label>What are you doing now?</label>
+     <div class="pills"><label><input type="radio" name="status" value="university" checked><span>Studying</span></label><label><input type="radio" name="status" value="occupation"><span>Working</span></label></div>
+     <label id="dl">Course and university</label><input name="detail" required placeholder="BSc Computer Science, University of Rwanda">
+     <label>Phone number (with country code)</label><input name="contact" type="tel" required placeholder="+250 788 123 456" pattern="\+[0-9 \-]{8,18}" title="Start with + and your country code"><div class="smsOnly hidden"><label>Send my code by</label><div class="pills"><label><input type="radio" name="channel" value="email" checked><span>Email</span></label><label><input type="radio" name="channel" value="phone"><span>SMS</span></label></div></div>
+    </div>
+    <div class="err"></div>
+    <div class="nav2"><button type="button" class="btn ghost hidden" id="prev">Back</button><button type="button" class="btn" id="next">Continue</button></div>
+   </form>
+   <form id="verify" class="hidden"><h3>Confirm your account</h3><p class="mute" id="vmsg"></p>
+    <input class="code" name="code" inputmode="numeric" maxlength="6" placeholder="······" required autocomplete="one-time-code">
+    <div class="err"></div><button class="btn" style="width:100%">Confirm and join</button>
+    <p class="lnk"><a href="#" id="resend">Send a new code</a> · <a href="#" class="toLogin">Back to log in</a></p></form>
+   <form id="forgot" class="hidden"><h3>Reset your password</h3><p class="mute">Enter your account email and we’ll send you a code.</p>
+    <label>Email</label><input name="email" type="email" required><div class="smsOnly hidden"><label>Send my code by</label><div class="pills"><label><input type="radio" name="channel" value="email" checked><span>Email</span></label><label><input type="radio" name="channel" value="phone"><span>SMS</span></label></div></div>
+    <div class="err"></div><button class="btn" style="width:100%">Send code</button><p class="lnk"><a href="#" class="toLogin">Back to log in</a></p></form>
+   <form id="reset" class="hidden"><h3>Choose a new password</h3><p class="mute" id="rmsg"></p>
+    <input class="code" name="code" inputmode="numeric" maxlength="6" placeholder="······" required autocomplete="one-time-code">
+    <label>New password (6+ characters)</label><input name="password" type="password" minlength="6" required autocomplete="new-password">
+    <div class="err"></div><button class="btn" style="width:100%">Save new password</button><p class="lnk"><a href="#" class="toLogin">Back to log in</a></p></form>
+  </div>
+ </div>
+</section>
+
+<div id="app" class="hidden">
+ <header><span class="logo">⭐ Shining Star</span>
+  <nav class="nav"><button data-v="home" class="on">Home</button><button data-v="chat">Chat</button></nav>
+  <button class="me" id="meBtn" title="Your profile"><span id="meName"></span><div class="av sm" id="meAv"></div></button>
+  <button class="btn ghost" id="out" style="padding:.45rem 1rem">Log out</button></header>
+ <main>
+  <section id="home" class="view feed">
+   <div class="card compose"><textarea id="body" maxlength="1000" placeholder="Share a memory, news or a hello with everyone…"></textarea>
+    <div id="prev2"></div>
+    <div class="bar"><label class="attach">📷 Photo / video<input type="file" id="file" accept="image/*,video/*" hidden></label><span id="cnt">0 / 1000</span><button class="btn" id="postBtn">Post</button></div></div>
+   <div id="posts"></div>
+  </section>
+  <section id="chatV" class="view hidden"><div class="card chat" id="chat">
+   <div class="side"><input id="q" placeholder="Search classmates" type="search"><div class="list" id="list"></div></div>
+   <div class="conv" id="conv"><div class="none">Pick a classmate to start chatting 💬</div></div>
+  </div></section>
+ </main>
+</div>
+<div id="modal"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let token=localStorage.getItem('ss_token'),me,users=[],active=null,unread={},socket,typingT;
+
+// ambient stars
+(()=>{const s=$('#stars');for(let i=0;i<70;i++){const d=document.createElement('div');d.className='star';d.style.cssText=`left:${Math.random()*100}%;top:${Math.random()*100}%;--d:${1+Math.random()*3}s;animation-delay:${Math.random()*3}s`;s.append(d)}
+ s.insertAdjacentHTML('beforeend','<div class="shoot"></div>')})();
+
+async function api(p,o={}){
+ const r=await fetch('/api'+p,{method:o.method||'GET',headers:{'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},body:o.body&&JSON.stringify(o.body)});
+ const d=await r.json().catch(()=>({}));if(!r.ok){if(r.status===401&&token&&p!=='/login')logout();throw Object.assign(new Error(d.error||'Something went wrong.'),{data:d})}return d}
+const hue=n=>[...String(n)].reduce((a,c)=>a+c.charCodeAt(0)*7,0)%360;
+const initials=n=>n.split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase();
+const thumb=u=>u.replace('/upload/','/upload/c_fill,g_face,w_160,h_160/');
+const av=(u,cls='',dot=false)=>`<div class="av ${cls}" style="--h:${hue(u.name)}">${u.avatar_url?`<img src="${esc(thumb(u.avatar_url))}" alt="">`:esc(initials(u.name))}${dot?`<span class="dot ${u.online?'on':''}"></span>`:''}</div>`;
+const ago=t=>{const s=(Date.now()-new Date(t))/1000;return s<60?'just now':s<3600?Math.floor(s/60)+' min ago':s<86400?Math.floor(s/3600)+' h ago':new Date(t).toLocaleDateString()};
+const hm=t=>new Date(t).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+function toast(t){const e=document.createElement('div');e.id='toast';e.textContent=t;document.body.append(e);setTimeout(()=>e.remove(),2600)}
+
+// ---------- auth ----------
+let step=0;
+$$('#tabs button').forEach(b=>b.onclick=()=>{const reg=b.dataset.t==='reg';$('#tabs').classList.toggle('reg',reg);$$('#tabs button').forEach(x=>x.classList.toggle('on',x===b));$('#login').classList.toggle('hidden',reg);$('#reg').classList.toggle('hidden',!reg)});
+function showStep(n){step=n;$$('#reg .step').forEach(s=>{const on=+s.dataset.s===n;s.classList.toggle('hidden',!on)});$$('.dots b').forEach((d,i)=>d.classList.toggle('on',i<=n));
+ $('#prev').classList.toggle('hidden',n===0);$('#next').textContent=n===2?'Join the reunion':'Continue';$('#reg .err').textContent=''}
+$$('[name=status]').forEach(r=>r.onchange=()=>{const w=r.value==='occupation';$('#dl').textContent=w?'Occupation and workplace':'Course and university';$('[name=detail]').placeholder=w?'Nurse, Kigali University Teaching Hospital':'BSc Computer Science, University of Rwanda'});
+$('#prev').onclick=()=>showStep(step-1);
+$('#next').onclick=async()=>{
+ const cur=$(`#reg .step[data-s="${step}"]`),bad=[...cur.querySelectorAll('input')].find(i=>!i.checkValidity());
+ if(bad){bad.reportValidity();return}
+ if(step<2)return showStep(step+1);
+ const f=Object.fromEntries(new FormData($('#reg')));
+ try{const d=await api('/register',{method:'POST',body:f});askCode(d.email,d.channel,'verify')}catch(e){$('#reg .err').textContent=e.message}};
+$('#login').onsubmit=async e=>{e.preventDefault();try{enter(await api('/login',{method:'POST',body:Object.fromEntries(new FormData(e.target))}))}catch(x){if(x.data?.needsVerify)askCode(x.data.email,'email','verify');else $('#login .err').textContent=x.message}};
+
+let pend={},cfg={};
+fetch('/api/config').then(r=>r.json()).then(c=>{cfg=c;$$('.smsOnly').forEach(x=>x.classList.toggle('hidden',!c.sms))}).catch(()=>{});
+function showForm(id){['login','reg','verify','forgot','reset'].forEach(f=>$('#'+f).classList.toggle('hidden',f!==id));
+ $('#tabs').classList.toggle('hidden',!['login','reg'].includes(id));$('#tabs').classList.toggle('reg',id==='reg');
+ $$('#tabs button').forEach(x=>x.classList.toggle('on',x.dataset.t===id));$$('.err').forEach(e=>e.textContent='')}
+$$('#tabs button').forEach(b=>b.onclick=()=>showForm(b.dataset.t));
+function askCode(email,channel,purpose){pend={email,channel};const where=channel==='phone'?'your phone by SMS':email;
+ if(purpose==='verify'){$('#vmsg').textContent='We sent a 6-digit code to '+where+'. It expires in 10 hours.';showForm('verify')}
+ else{$('#rmsg').textContent='If that account exists, we sent a 6-digit code to '+where+'.';showForm('reset')}}
+$('#toForgot').onclick=e=>{e.preventDefault();showForm('forgot')};
+$$('.toLogin').forEach(a=>a.onclick=e=>{e.preventDefault();showForm('login')});
+$('#verify').onsubmit=async e=>{e.preventDefault();try{enter(await api('/verify',{method:'POST',body:{email:pend.email,code:e.target.code.value}}))}catch(x){$('#verify .err').textContent=x.message}};
+$('#resend').onclick=async e=>{e.preventDefault();try{await api('/send-code',{method:'POST',body:{email:pend.email,purpose:'verify',channel:pend.channel}});toast('New code sent')}catch(x){$('#verify .err').textContent=x.message}};
+$('#forgot').onsubmit=async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));try{await api('/send-code',{method:'POST',body:{...f,purpose:'reset'}});askCode(f.email,f.channel||'email','reset')}catch(x){$('#forgot .err').textContent=x.message}};
+$('#reset').onsubmit=async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));try{await api('/reset',{method:'POST',body:{...f,email:pend.email}});showForm('login');toast('Password updated. Please log in.')}catch(x){$('#reset .err').textContent=x.message}};
+async function upload(file){
+ const img=file.type.startsWith('image/'),vid=file.type.startsWith('video/');
+ if(!cfg.cloud)throw new Error('Photo and video uploads are not set up yet.');
+ if(!img&&!vid)throw new Error('Choose a photo or a video.');
+ if(file.size>(img?8:30)*1048576)throw new Error(img?'Photos must be under 8 MB.':'Videos must be under 30 MB.');
+ const fd=new FormData();fd.append('file',file);fd.append('upload_preset',cfg.preset);
+ const r=await fetch(`https://api.cloudinary.com/v1_1/${cfg.cloud}/${img?'image':'video'}/upload`,{method:'POST',body:fd});
+ const d=await r.json();if(!r.ok)throw new Error(d.error?.message||'Upload failed.');return{url:d.secure_url,type:img?'image':'video'}}
+function refreshMe(){$('#meAv').outerHTML=av(me,'sm').replace('class="av sm"','class="av sm" id="meAv"')}
+function enter(d){token=d.token;localStorage.setItem('ss_token',token);start(d.user)}
+function logout(){localStorage.removeItem('ss_token');token=null;socket&&socket.disconnect();location.reload()}
+$('#out').onclick=logout;
+
+// ---------- app ----------
+async function start(user){
+ me=user;$('#auth').classList.add('hidden');$('#app').classList.remove('hidden');
+ $('#meName').textContent=me.name.split(' ')[0];$('#meAv').outerHTML=av(me,'sm').replace('class="av sm"','class="av sm" id="meAv"');
+ socket=io({auth:{token}});
+ socket.on('like',({post_id,count})=>{const c=$('#post'+post_id+' .lc');if(c)c.textContent=count?'👍 '+count:''});
+ socket.on('comment',({post_id,count,comment})=>{const card=$('#post'+post_id);if(!card)return;card.querySelector('.cc').textContent=count+' comment'+(count>1?'s':'');
+  if(card.querySelector('.cm').dataset.l)card.querySelector('.clist').insertAdjacentHTML('beforeend',cmHtml(comment))});
+ socket.on('presence',({id,online})=>{const u=users.find(x=>x.id===id);if(u){u.online=online;renderList();if(active?.id===id)renderHead()}});
+ socket.on('online-list',ids=>{users.forEach(u=>u.online=ids.includes(u.id));renderList()});
+ socket.on('post',p=>{if(!$(`#post${p.id}`))$('#posts').insertAdjacentHTML('afterbegin',postHtml(p));$('#posts .empty')?.remove()});
+ socket.on('message',m=>{const other=m.from_id===me.id?m.to_id:m.from_id;
+  if(active?.id===other){addMsg(m);$('#typing').textContent=''}else{unread[other]=(unread[other]||0)+1;renderList();if(m.from_id!==me.id)toast('New message from '+(users.find(u=>u.id===other)?.name||'a classmate'))}});
+ socket.on('typing',({from})=>{if(active?.id===from){$('#typing').textContent=active.name.split(' ')[0]+' is typing…';clearTimeout(typingT);typingT=setTimeout(()=>$('#typing').textContent='',1800)}});
+ [users]=[await api('/users')];renderList();loadPosts();
+}
+$$('.nav button').forEach(b=>b.onclick=()=>{$$('.nav button').forEach(x=>x.classList.toggle('on',x===b));$('#home').classList.toggle('hidden',b.dataset.v!=='home');$('#chatV').classList.toggle('hidden',b.dataset.v!=='chat')});
+$('#meBtn').onclick=()=>profile(me);
+
+// posts
+const cmHtml=c=>`<div class="c">${av(c,'sm')}<div class="cb"><b>${esc(c.name)}</b><span>${esc(c.body)}</span></div></div>`;
+const media=p=>p.media_url?(p.media_type==='video'?`<video src="${esc(p.media_url)}" controls preload="metadata"></video>`:`<img src="${esc(p.media_url)}" alt="Post photo" loading="lazy">`):'';
+const postHtml=p=>`<article class="card post" id="post${p.id}"><div class="who" data-uid="${p.user_id}">${av(p)}<div><b>${esc(p.name)}</b><small>Class of ${p.left_year} · ${ago(p.created_at)}</small></div></div>${p.body?`<p>${esc(p.body)}</p>`:''}<div class="pm">${media(p)}</div>
+<div class="stats"><span class="lc">${p.like_count?'👍 '+p.like_count:''}</span><button class="lnkb cc" data-act="toggle">${p.comment_count?p.comment_count+' comment'+(p.comment_count>1?'s':''):''}</button></div>
+<div class="acts"><button data-act="like" class="${p.liked?'liked':''}">👍 Like</button><button data-act="toggle">💬 Comment</button></div>
+<div class="cm hidden"><div class="clist"></div><form class="cf"><input placeholder="Write a comment…" maxlength="500" required><button class="btn">Send</button></form></div></article>`;
+async function loadPosts(){const ps=await api('/posts');$('#posts').innerHTML=ps.length?ps.map(postHtml).join(''):'<div class="empty">No posts yet. Be the first to say hello! 👋</div>'}
+$('#posts').onclick=async e=>{
+ const card=e.target.closest('.post');if(!card)return;const id=card.id.slice(4);
+ const w=e.target.closest('[data-uid]');if(w)return openProfile(+w.dataset.uid);
+ const a=e.target.closest('[data-act]')?.dataset.act;
+ if(a==='like'){try{const r=await api(`/posts/${id}/like`,{method:'POST'});card.querySelector('[data-act=like]').classList.toggle('liked',r.liked);card.querySelector('.lc').textContent=r.count?'👍 '+r.count:''}catch(x){toast(x.message)}}
+ if(a==='toggle'){const c=card.querySelector('.cm');c.classList.toggle('hidden');
+  if(!c.classList.contains('hidden')){if(!c.dataset.l){c.dataset.l=1;try{card.querySelector('.clist').innerHTML=(await api(`/posts/${id}/comments`)).map(cmHtml).join('')}catch(x){toast(x.message)}}c.querySelector('input').focus()}}};
+$('#posts').onsubmit=async e=>{e.preventDefault();const card=e.target.closest('.post'),i=e.target.querySelector('input'),v=i.value.trim();if(!v)return;
+ try{await api(`/posts/${card.id.slice(4)}/comments`,{method:'POST',body:{body:v}});i.value=''}catch(x){toast(x.message)}};
+$('#body').oninput=e=>$('#cnt').textContent=e.target.value.length+' / 1000';
+let pick=null;
+$('#file').onchange=e=>{pick=e.target.files[0]||null;const box=$('#prev2');box.innerHTML='';if(!pick)return;const u=URL.createObjectURL(pick);
+ box.innerHTML=(pick.type.startsWith('video/')?`<video src="${u}" controls></video>`:`<img src="${u}" alt="">`)+'<button type="button" class="x2" id="rm" aria-label="Remove">×</button>';
+ $('#rm').onclick=()=>{pick=null;$('#file').value='';box.innerHTML=''}};
+$('#postBtn').onclick=async()=>{const b=$('#body').value.trim();if(!b&&!pick)return toast('Write something or add a photo');
+ const btn=$('#postBtn');btn.disabled=true;btn.textContent=pick?'Uploading…':'Posting…';
+ try{let m={};if(pick){const up=await upload(pick);m={media_url:up.url,media_type:up.type}}
+  await api('/posts',{method:'POST',body:{body:b,...m}});$('#body').value='';$('#cnt').textContent='0 / 1000';pick=null;$('#file').value='';$('#prev2').innerHTML='';toast('Posted ✨')}
+ catch(e){toast(e.message)}finally{btn.disabled=false;btn.textContent='Post'}};
+
+// chat
+function renderList(){const q=$('#q').value.toLowerCase();
+ const l=users.filter(u=>u.name.toLowerCase().includes(q)).sort((a,b)=>b.online-a.online||a.name.localeCompare(b.name));
+ $('#list').innerHTML=l.length?l.map(u=>`<button class="u ${active?.id===u.id?'on':''}" data-id="${u.id}">${av(u,'',true)}<div><b>${esc(u.name)}</b><small>${u.online?'Online':'Offline'} · Class of ${u.left_year}</small></div>${unread[u.id]?`<span class="badge">${unread[u.id]}</span>`:''}</button>`).join(''):'<div class="empty">No classmates found yet. Invite friends to register!</div>'}
+$('#q').oninput=renderList;
+$('#list').onclick=e=>{const b=e.target.closest('.u');if(b)openChat(+b.dataset.id)};
+async function openChat(id){active=users.find(u=>u.id===id);unread[id]=0;$('#chat').classList.add('open');renderList();
+ $('#conv').innerHTML=`<div class="ch" id="head"></div><div class="msgs" id="msgs"></div><div class="typing" id="typing"></div><form class="send" id="sf"><input id="mi" placeholder="Type a message" autocomplete="off" maxlength="2000"><button class="btn">Send</button></form>`;
+ renderHead();$('#head').onclick=e=>{if(e.target.closest('.back'))return;profile(active)};
+ const ms=await api('/messages/'+id);$('#msgs').innerHTML=ms.length?'':'<div class="none">Say hello to '+esc(active.name.split(' ')[0])+' 👋</div>';ms.forEach(addMsg);
+ $('#mi').oninput=()=>socket.emit('typing',{to:id});
+ $('#sf').onsubmit=e=>{e.preventDefault();const v=$('#mi').value.trim();if(!v)return;socket.emit('send',{to:id,body:v},r=>r?.error&&toast('Message not sent'));$('#mi').value=''};$('#mi').focus()}
+function renderHead(){$('#head').innerHTML=`<button class="back" type="button" onclick="event.stopPropagation();$('#chat').classList.remove('open');active=null;renderList()">‹</button>${av(active,'',true)}<div><b>${esc(active.name)}</b><br><small class="${active.online?'on':''}">${active.online?'Online':'Offline'} · tap to view profile</small></div>`;}
+function addMsg(m){const box=$('#msgs');box.querySelector('.none')?.remove();box.insertAdjacentHTML('beforeend',`<div class="m ${m.from_id===me.id?'me':''}">${esc(m.body)}<time>${hm(m.created_at)}</time></div>`);box.scrollTop=box.scrollHeight}
+
+// profile
+async function openProfile(id){if(id===me.id)return profile(me);profile(users.find(u=>u.id===id)||await api('/users/'+id))}
+function profile(u){const w=u.status==='occupation';
+ $('#modal').innerHTML=`<div class="modal" id="mb"><div class="card sheet" role="dialog" aria-label="Profile"><button class="x" aria-label="Close">×</button>${av(u,'lg')}<h2>${esc(u.name)}</h2>${u.id===me.id?'<label class="btn ghost chg">Change photo<input type="file" id="avf" accept="image/*" hidden></label><br>':''}
+ ${u.id===me.id?'<span class="st">This is you</span>':`<span class="st ${u.online?'on':''}"><i></i>${u.online?'Online now':'Offline'}</span>`}
+ <dl><dt>Joined Shining Star</dt><dd>${u.join_year} · ${esc(u.join_class)}</dd><dt>Left Shining Star</dt><dd>${u.left_year} · ${esc(u.left_class)}</dd>
+ <dt>${w?'Occupation':'Studying'}</dt><dd>${esc(u.detail)}</dd><dt>Contact</dt><dd>${esc(u.contact)}</dd><dt>Email</dt><dd>${esc(u.email)}</dd></dl></div></div>`;
+ $('#avf')?.addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;
+  try{if(!f.type.startsWith('image/'))throw new Error('Choose a photo.');toast('Uploading…');const up=await upload(f);me=await api('/me/avatar',{method:'PUT',body:{url:up.url}});refreshMe();profile(me)}catch(x){toast(x.message)}});
+ $('#mb').onclick=e=>{if(e.target.id==='mb'||e.target.className==='x')$('#modal').innerHTML=''}}
+document.addEventListener('keydown',e=>e.key==='Escape'&&($('#modal').innerHTML=''));
+
+// boot
+(async()=>{if(token){try{return start(await api('/me'))}catch{}}$('#auth').classList.remove('hidden')})();
+</script>
+
+</body>
+</html>
