@@ -2,14 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Shining Star Reunion – Alumni Community</title>
- <meta name="google-site-verification" content="mF_WzU8ozDjn3g_ZPDVb6Mub83r3VKeaPan1q9M1bvQ" />
 <meta name="description" content="The official online reunion for Shining Star students. Reconnect with classmates, share memories and chat.">
 <meta property="og:title" content="Shining Star Reunion"><meta property="og:description" content="Reconnect with your Shining Star classmates.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⭐</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=Plus+Jakarta+Sans:wght@400;500;700&display=swap" rel="stylesheet">
- 
 <style>
 :root{--ink:#0b1030;--panel:#141b45;--panel2:#1c2558;--line:#2b3677;--gold:#ffc857;--sky:#8fa8ff;--text:#eef1ff;--mute:#9aa6d8;--ok:#4be3a1;--bad:#ff7a8a;
 --serif:'Fraunces',Georgia,serif;--sans:'Plus Jakarta Sans',system-ui,sans-serif}
@@ -84,7 +82,7 @@ main{max-width:1000px;margin:0 auto;padding:1.4rem}
 .side{border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
 .side input{margin:.8rem;width:calc(100% - 1.6rem)}.list{overflow:auto;flex:1}
 .u{display:flex;gap:.7rem;align-items:center;padding:.7rem 1rem;cursor:pointer;transition:background .2s;width:100%;background:none;text-align:left}
-.u:hover,.u.on{background:var(--panel2)}.u div{min-width:0;flex:1}.u b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.u small{color:var(--mute)}
+.u:hover,.u.on{background:var(--panel2)}.u>div:not(.av){min-width:0;flex:1}.u b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.u small{color:var(--mute)}
 .badge{background:var(--gold);color:#241a00;border-radius:99px;padding:0 .5rem;font-size:12px;font-weight:700;animation:pop .3s}
 .conv{display:flex;flex-direction:column;min-height:0}
 .ch{display:flex;align-items:center;gap:.8rem;padding:.8rem 1.1rem;border-bottom:1px solid var(--line);cursor:pointer}.ch:hover{background:#ffffff08}
@@ -126,6 +124,32 @@ dl{text-align:left;margin-top:1.2rem;display:grid;gap:.1rem}dt{font-size:12px;co
 .cb{background:var(--panel2);padding:.45rem .8rem;border-radius:16px;min-width:0}.cb b{display:block;font-size:13px}.cb span{word-break:break-word}
 .cf{display:flex;gap:.5rem}.cf input{border-radius:999px}.cf .btn{padding:.5rem 1rem}
 .chg{display:inline-block;margin-top:.5rem;padding:.4rem 1rem;font-size:13px;cursor:pointer}
+
+button{touch-action:manipulation}
+.av{aspect-ratio:1/1;min-width:0;flex:none}.u .av,.ch .av,.c .av,.who .av{flex:none}
+.ph{display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem}.ph .who{margin-bottom:.7rem;min-width:0}
+.del{background:none;color:var(--mute);width:40px;height:40px;border-radius:50%;font-size:17px;flex:none;transition:.2s}.del:hover{background:#ff7a8a22;color:var(--bad)}
+.sheet{max-height:90vh;overflow:auto}
+.tabbar{display:none}.ic{font-size:20px;line-height:1}
+@media(max-width:720px){
+ header{padding:.5rem .9rem}header .nav,#out{display:none}
+ .me{min-width:44px;min-height:44px;justify-content:center}
+ .tabbar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:6;gap:8px;padding:6px 12px calc(6px + env(safe-area-inset-bottom));background:#0b1030f5;border-top:1px solid var(--line)}
+ .tabbar button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:54px;font-size:12px;border-radius:14px}
+ body:has(.chat.open) .tabbar{display:none}
+ main{padding:1rem .8rem calc(92px + env(safe-area-inset-bottom))}
+ .chat{height:calc(100vh - 190px);height:calc(100dvh - 190px)}
+ body:has(.chat.open) main{padding-bottom:1rem}body:has(.chat.open) .chat{height:calc(100vh - 100px);height:calc(100dvh - 100px)}
+ .back{min-width:44px;min-height:44px;font-size:1.8rem}
+ .acts button{min-height:46px}.u{padding:.8rem 1rem}
+ #toast{bottom:96px}
+}
+
+.mn{display:block;font-size:12px;font-weight:700;color:hsl(var(--h),80%,75%);margin-bottom:2px}
+.m.me{cursor:pointer}.m.gone{opacity:.7;font-style:italic;cursor:default}.m.me.gone{background:var(--panel2);color:var(--mute)}
+.unsend{display:none;margin-top:6px;background:#241a00;color:var(--gold);border-radius:10px;padding:.45rem .8rem;font-size:13px;min-height:36px}
+.m.sel .unsend{display:inline-block}
+.av.grp{background:linear-gradient(135deg,var(--gold),#ff9d4d);font-size:1.1rem}
 </style>
 </head>
 <body>
@@ -181,9 +205,10 @@ dl{text-align:left;margin-top:1.2rem;display:grid;gap:.1rem}dt{font-size:12px;co
 
 <div id="app" class="hidden">
  <header><span class="logo">⭐ Shining Star</span>
-  <nav class="nav"><button data-v="home" class="on">Home</button><button data-v="chat">Chat</button></nav>
+  <nav class="nav"><button data-v="home" class="on">Home</button><button data-v="chat">Chats</button><button data-v="room">Chat Room</button></nav>
   <button class="me" id="meBtn" title="Your profile"><span id="meName"></span><div class="av sm" id="meAv"></div></button>
   <button class="btn ghost" id="out" style="padding:.45rem 1rem">Log out</button></header>
+ <nav class="nav tabbar" aria-label="Main"><button data-v="home" class="on"><span class="ic">🏠</span>Home</button><button data-v="chat"><span class="ic">💬</span>Chats</button><button data-v="room"><span class="ic">👥</span>Room</button></nav>
  <main>
   <section id="home" class="view feed">
    <div class="card compose"><textarea id="body" maxlength="1000" placeholder="Share a memory, news or a hello with everyone…"></textarea>
@@ -222,7 +247,7 @@ function toast(t){const e=document.createElement('div');e.id='toast';e.textConte
 
 // ---------- auth ----------
 let step=0;
-$$('#tabs button').forEach(b=>b.onclick=()=>{const reg=b.dataset.t==='reg';$('#tabs').classList.toggle('reg',reg);$$('#tabs button').forEach(x=>x.classList.toggle('on',x===b));$('#login').classList.toggle('hidden',reg);$('#reg').classList.toggle('hidden',!reg)});
+$$('#tabs button').forEach(b=>b.onclick=()=>{const reg=b.dataset.t==='reg';$('#tabs').classList.toggle('reg',reg);$$('#tabs button').forEach(x=>x.classList.toggle('on',x.dataset.v===b.dataset.v));$('#login').classList.toggle('hidden',reg);$('#reg').classList.toggle('hidden',!reg)});
 function showStep(n){step=n;$$('#reg .step').forEach(s=>{const on=+s.dataset.s===n;s.classList.toggle('hidden',!on)});$$('.dots b').forEach((d,i)=>d.classList.toggle('on',i<=n));
  $('#prev').classList.toggle('hidden',n===0);$('#next').textContent=n===2?'Join the reunion':'Continue';$('#reg .err').textContent=''}
 $$('[name=status]').forEach(r=>r.onchange=()=>{const w=r.value==='occupation';$('#dl').textContent=w?'Occupation and workplace':'Course and university';$('[name=detail]').placeholder=w?'Nurse, Kigali University Teaching Hospital':'BSc Computer Science, University of Rwanda'});
@@ -271,21 +296,25 @@ async function start(user){
  socket.on('like',({post_id,count})=>{const c=$('#post'+post_id+' .lc');if(c)c.textContent=count?'👍 '+count:''});
  socket.on('comment',({post_id,count,comment})=>{const card=$('#post'+post_id);if(!card)return;card.querySelector('.cc').textContent=count+' comment'+(count>1?'s':'');
   if(card.querySelector('.cm').dataset.l)card.querySelector('.clist').insertAdjacentHTML('beforeend',cmHtml(comment))});
- socket.on('presence',({id,online})=>{const u=users.find(x=>x.id===id);if(u){u.online=online;renderList();if(active?.id===id)renderHead()}});
+ socket.on('post-deleted',({id})=>{$('#post'+id)?.remove();if(!$('#posts .post'))$('#posts').innerHTML='<div class="empty">No posts yet. Be the first to say hello! 👋</div>'});
+ socket.on('presence',({id,online})=>{const u=users.find(x=>x.id===id);if(u){u.online=online;renderList();if(active?.id===id||active?.group)renderHead()}});
  socket.on('online-list',ids=>{users.forEach(u=>u.online=ids.includes(u.id));renderList()});
  socket.on('post',p=>{if(!$(`#post${p.id}`))$('#posts').insertAdjacentHTML('afterbegin',postHtml(p));$('#posts .empty')?.remove()});
- socket.on('message',m=>{const other=m.from_id===me.id?m.to_id:m.from_id;
-  if(active?.id===other){addMsg(m);$('#typing').textContent=''}else{unread[other]=(unread[other]||0)+1;renderList();if(m.from_id!==me.id)toast('New message from '+(users.find(u=>u.id===other)?.name||'a classmate'))}});
+ socket.on('message',m=>{const other=m.to_id===0?0:m.from_id===me.id?m.to_id:m.from_id;
+  if(active?.id===other){addMsg(m);$('#typing').textContent=''}
+  else if(m.from_id!==me.id){unread[other]=(unread[other]||0)+1;renderList();toast(other===0?'New message in Chat Room':'New message from '+(users.find(u=>u.id===other)?.name||'a classmate'))}});
+ socket.on('message-deleted',({id})=>{const el=$(`#msgs [data-id="${id}"]`);if(!el)return;
+  const t=el.querySelector('time')?.outerHTML||'',mn=el.querySelector('.mn')?.outerHTML||'';el.classList.remove('sel');el.classList.add('gone');el.innerHTML=mn+'🚫 <i>This message was deleted</i>'+t});
  socket.on('typing',({from})=>{if(active?.id===from){$('#typing').textContent=active.name.split(' ')[0]+' is typing…';clearTimeout(typingT);typingT=setTimeout(()=>$('#typing').textContent='',1800)}});
  [users]=[await api('/users')];renderList();loadPosts();
 }
-$$('.nav button').forEach(b=>b.onclick=()=>{$$('.nav button').forEach(x=>x.classList.toggle('on',x===b));$('#home').classList.toggle('hidden',b.dataset.v!=='home');$('#chatV').classList.toggle('hidden',b.dataset.v!=='chat')});
+$$('.nav button').forEach(b=>b.onclick=()=>{const v=b.dataset.v;$$('.nav button').forEach(x=>x.classList.toggle('on',x.dataset.v===v));$('#home').classList.toggle('hidden',v!=='home');$('#chatV').classList.toggle('hidden',v==='home');if(v==='room')openChat(0);window.scrollTo(0,0)});
 $('#meBtn').onclick=()=>profile(me);
 
 // posts
 const cmHtml=c=>`<div class="c">${av(c,'sm')}<div class="cb"><b>${esc(c.name)}</b><span>${esc(c.body)}</span></div></div>`;
 const media=p=>p.media_url?(p.media_type==='video'?`<video src="${esc(p.media_url)}" controls preload="metadata"></video>`:`<img src="${esc(p.media_url)}" alt="Post photo" loading="lazy">`):'';
-const postHtml=p=>`<article class="card post" id="post${p.id}"><div class="who" data-uid="${p.user_id}">${av(p)}<div><b>${esc(p.name)}</b><small>Class of ${p.left_year} · ${ago(p.created_at)}</small></div></div>${p.body?`<p>${esc(p.body)}</p>`:''}<div class="pm">${media(p)}</div>
+const postHtml=p=>`<article class="card post" id="post${p.id}"><div class="ph"><div class="who" data-uid="${p.user_id}">${av(p)}<div><b>${esc(p.name)}</b><small>Class of ${p.left_year} · ${ago(p.created_at)}</small></div></div>${p.user_id===me.id?'<button class="del" data-act="del" aria-label="Delete post" title="Delete post">🗑</button>':''}</div>${p.body?`<p>${esc(p.body)}</p>`:''}<div class="pm">${media(p)}</div>
 <div class="stats"><span class="lc">${p.like_count?'👍 '+p.like_count:''}</span><button class="lnkb cc" data-act="toggle">${p.comment_count?p.comment_count+' comment'+(p.comment_count>1?'s':''):''}</button></div>
 <div class="acts"><button data-act="like" class="${p.liked?'liked':''}">👍 Like</button><button data-act="toggle">💬 Comment</button></div>
 <div class="cm hidden"><div class="clist"></div><form class="cf"><input placeholder="Write a comment…" maxlength="500" required><button class="btn">Send</button></form></div></article>`;
@@ -294,6 +323,7 @@ $('#posts').onclick=async e=>{
  const card=e.target.closest('.post');if(!card)return;const id=card.id.slice(4);
  const w=e.target.closest('[data-uid]');if(w)return openProfile(+w.dataset.uid);
  const a=e.target.closest('[data-act]')?.dataset.act;
+ if(a==='del'){if(!confirm('Delete this post? This cannot be undone.'))return;try{await api(`/posts/${id}`,{method:'DELETE'});card.remove();toast('Post deleted')}catch(x){toast(x.message)}return}
  if(a==='like'){try{const r=await api(`/posts/${id}/like`,{method:'POST'});card.querySelector('[data-act=like]').classList.toggle('liked',r.liked);card.querySelector('.lc').textContent=r.count?'👍 '+r.count:''}catch(x){toast(x.message)}}
  if(a==='toggle'){const c=card.querySelector('.cm');c.classList.toggle('hidden');
   if(!c.classList.contains('hidden')){if(!c.dataset.l){c.dataset.l=1;try{card.querySelector('.clist').innerHTML=(await api(`/posts/${id}/comments`)).map(cmHtml).join('')}catch(x){toast(x.message)}}c.querySelector('input').focus()}}};
@@ -311,27 +341,39 @@ $('#postBtn').onclick=async()=>{const b=$('#body').value.trim();if(!b&&!pick)ret
  catch(e){toast(e.message)}finally{btn.disabled=false;btn.textContent='Post'}};
 
 // chat
+const GROUP={id:0,name:'Chat Room',group:true};
+const grpAv=cls=>`<div class="av ${cls} grp">⭐</div>`;
 function renderList(){const q=$('#q').value.toLowerCase();
  const l=users.filter(u=>u.name.toLowerCase().includes(q)).sort((a,b)=>b.online-a.online||a.name.localeCompare(b.name));
- $('#list').innerHTML=l.length?l.map(u=>`<button class="u ${active?.id===u.id?'on':''}" data-id="${u.id}">${av(u,'',true)}<div><b>${esc(u.name)}</b><small>${u.online?'Online':'Offline'} · Class of ${u.left_year}</small></div>${unread[u.id]?`<span class="badge">${unread[u.id]}</span>`:''}</button>`).join(''):'<div class="empty">No classmates found yet. Invite friends to register!</div>'}
+ const gOn=users.filter(u=>u.online).length+1;
+ const grp=(!q||'chat room everyone group'.includes(q))?`<button class="u ${active?.id===0?'on':''}" data-id="0">${grpAv('')}<div><b>Chat Room</b><small>Group chat · ${gOn} online</small></div>${unread[0]?`<span class="badge">${unread[0]}</span>`:''}</button>`:'';
+ $('#list').innerHTML=grp+(l.length?l.map(u=>`<button class="u ${active?.id===u.id?'on':''}" data-id="${u.id}">${av(u,'',true)}<div><b>${esc(u.name)}</b><small>${u.online?'Online':'Offline'} · Class of ${u.left_year}</small></div>${unread[u.id]?`<span class="badge">${unread[u.id]}</span>`:''}</button>`).join(''):'<div class="empty">No classmates found yet. Invite friends to register!</div>')}
 $('#q').oninput=renderList;
 $('#list').onclick=e=>{const b=e.target.closest('.u');if(b)openChat(+b.dataset.id)};
-async function openChat(id){active=users.find(u=>u.id===id);unread[id]=0;$('#chat').classList.add('open');renderList();
+async function openChat(id){active=id===0?GROUP:users.find(u=>u.id===id);if(!active)return;unread[id]=0;$('#chat').classList.add('open');renderList();
  $('#conv').innerHTML=`<div class="ch" id="head"></div><div class="msgs" id="msgs"></div><div class="typing" id="typing"></div><form class="send" id="sf"><input id="mi" placeholder="Type a message" autocomplete="off" maxlength="2000"><button class="btn">Send</button></form>`;
- renderHead();$('#head').onclick=e=>{if(e.target.closest('.back'))return;profile(active)};
- const ms=await api('/messages/'+id);$('#msgs').innerHTML=ms.length?'':'<div class="none">Say hello to '+esc(active.name.split(' ')[0])+' 👋</div>';ms.forEach(addMsg);
- $('#mi').oninput=()=>socket.emit('typing',{to:id});
+ renderHead();$('#head').onclick=e=>{if(e.target.closest('.back')||active?.group)return;profile(active)};
+ const ms=await api('/messages/'+id);if(active?.id!==id)return;
+ $('#msgs').innerHTML=ms.length?'':'<div class="none">'+(active.group?'Start the conversation with everyone 👋':'Say hello to '+esc(active.name.split(' ')[0])+' 👋')+'</div>';ms.forEach(addMsg);
+ $('#msgs').onclick=e=>{const b=e.target.closest('.m.me:not(.gone)');if(!b)return;
+  if(e.target.closest('.unsend')){if(confirm('Unsend this message? It will be removed for everyone.'))api('/messages/'+b.dataset.id,{method:'DELETE'}).catch(x=>toast(x.message));return}
+  $$('.m.sel').forEach(x=>x!==b&&x.classList.remove('sel'));b.classList.toggle('sel')};
+ $('#mi').oninput=()=>{if(!active?.group)socket.emit('typing',{to:id})};
  $('#sf').onsubmit=e=>{e.preventDefault();const v=$('#mi').value.trim();if(!v)return;socket.emit('send',{to:id,body:v},r=>r?.error&&toast('Message not sent'));$('#mi').value=''};$('#mi').focus()}
-function renderHead(){$('#head').innerHTML=`<button class="back" type="button" onclick="event.stopPropagation();$('#chat').classList.remove('open');active=null;renderList()">‹</button>${av(active,'',true)}<div><b>${esc(active.name)}</b><br><small class="${active.online?'on':''}">${active.online?'Online':'Offline'} · tap to view profile</small></div>`;}
-function addMsg(m){const box=$('#msgs');box.querySelector('.none')?.remove();box.insertAdjacentHTML('beforeend',`<div class="m ${m.from_id===me.id?'me':''}">${esc(m.body)}<time>${hm(m.created_at)}</time></div>`);box.scrollTop=box.scrollHeight}
+function renderHead(){const g=active.group,on=users.filter(u=>u.online).length+1;
+ $('#head').innerHTML=`<button class="back" type="button" onclick="event.stopPropagation();$('#chat').classList.remove('open');active=null;renderList()">‹</button>${g?grpAv(''):av(active,'',true)}<div><b>${esc(active.name)}</b><br><small class="${g||active.online?'on':''}">${g?on+' online':active.online?'Online · tap to view profile':'Offline · tap to view profile'}</small></div>`}
+function addMsg(m){const box=$('#msgs');box.querySelector('.none')?.remove();const mine=m.from_id===me.id;
+ const who=active.group&&!mine?`<span class="mn" style="--h:${hue(m.name||'')}">${esc(m.name||'Student')}</span>`:'';
+ box.insertAdjacentHTML('beforeend',`<div class="m ${mine?'me':''} ${m.deleted?'gone':''}" data-id="${m.id}">${who}${m.deleted?'🚫 <i>This message was deleted</i>':esc(m.body)}<time>${hm(m.created_at)}</time>${mine&&!m.deleted?'<button class="unsend" type="button">🗑 Unsend</button>':''}</div>`);box.scrollTop=box.scrollHeight}
 
 // profile
 async function openProfile(id){if(id===me.id)return profile(me);profile(users.find(u=>u.id===id)||await api('/users/'+id))}
 function profile(u){const w=u.status==='occupation';
- $('#modal').innerHTML=`<div class="modal" id="mb"><div class="card sheet" role="dialog" aria-label="Profile"><button class="x" aria-label="Close">×</button>${av(u,'lg')}<h2>${esc(u.name)}</h2>${u.id===me.id?'<label class="btn ghost chg">Change photo<input type="file" id="avf" accept="image/*" hidden></label><br>':''}
+ $('#modal').innerHTML=`<div class="modal" id="mb"><div class="card sheet" role="dialog" aria-label="Profile"><button class="x" aria-label="Close">×</button>${av(u,'lg')}<h2>${esc(u.name)}</h2>${u.id===me.id?'<label class="btn ghost chg">Change photo<input type="file" id="avf" accept="image/*" hidden></label> <button class="btn ghost chg" id="lo" type="button">Log out</button><br>':''}
  ${u.id===me.id?'<span class="st">This is you</span>':`<span class="st ${u.online?'on':''}"><i></i>${u.online?'Online now':'Offline'}</span>`}
  <dl><dt>Joined Shining Star</dt><dd>${u.join_year} · ${esc(u.join_class)}</dd><dt>Left Shining Star</dt><dd>${u.left_year} · ${esc(u.left_class)}</dd>
  <dt>${w?'Occupation':'Studying'}</dt><dd>${esc(u.detail)}</dd><dt>Contact</dt><dd>${esc(u.contact)}</dd><dt>Email</dt><dd>${esc(u.email)}</dd></dl></div></div>`;
+ $('#lo')?.addEventListener('click',logout);
  $('#avf')?.addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;
   try{if(!f.type.startsWith('image/'))throw new Error('Choose a photo.');toast('Uploading…');const up=await upload(f);me=await api('/me/avatar',{method:'PUT',body:{url:up.url}});refreshMe();profile(me)}catch(x){toast(x.message)}});
  $('#mb').onclick=e=>{if(e.target.id==='mb'||e.target.className==='x')$('#modal').innerHTML=''}}
