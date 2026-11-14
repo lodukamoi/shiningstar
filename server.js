@@ -31,6 +31,7 @@ async function init() {
   await q(`CREATE TABLE IF NOT EXISTS comments(id SERIAL PRIMARY KEY, post_id INT NOT NULL, user_id INT NOT NULL, body TEXT NOT NULL, created_at TIMESTAMPTZ DEFAULT now())`);
   await q(`CREATE TABLE IF NOT EXISTS messages(id SERIAL PRIMARY KEY, from_id INT NOT NULL, to_id INT NOT NULL, body TEXT NOT NULL, created_at TIMESTAMPTZ DEFAULT now())`);
   await q(`CREATE TABLE IF NOT EXISTS codes(id SERIAL PRIMARY KEY, user_id INT NOT NULL, purpose TEXT NOT NULL, code_hash TEXT NOT NULL, attempts INT DEFAULT 0, expires_at TIMESTAMPTZ NOT NULL, created_at TIMESTAMPTZ DEFAULT now())`);
+  await q(`ALTER TABLE messages ADD COLUMN IF NOT EXISTS deleted BOOLEAN DEFAULT false`);
   await q(`CREATE INDEX IF NOT EXISTS idx_msg ON messages(from_id,to_id)`);
 }
 
@@ -190,6 +191,13 @@ app.post('/api/posts', auth, wrap(async (req, res) => {
   const post = { ...(await one(`${POST_Q} WHERE p.id=$1`, [id])), like_count: 0, liked: false, comment_count: 0 };
   io.emit('post', post); res.json(post);
 }));
+app.delete('/api/posts/:id', auth, wrap(async (req, res) => {
+  const pid = parseInt(req.params.id, 10) || 0;
+  const gone = await one('DELETE FROM posts WHERE id=$1 AND user_id=$2 RETURNING id', [pid, req.uid]);
+  if (!gone) return res.status(404).json({ error: 'Post not found, or it isn’t yours.' });
+  await q('DELETE FROM likes WHERE post_id=$1', [pid]); await q('DELETE FROM comments WHERE post_id=$1', [pid]);
+  io.emit('post-deleted', { id: pid }); res.json({ ok: true });
+}));
 app.post('/api/posts/:id/like', auth, wrap(async (req, res) => {
   const pid = parseInt(req.params.id, 10);
   if (!pid || !(await one('SELECT 1 FROM posts WHERE id=$1', [pid]))) return res.status(404).json({ error: 'Post not found.' });
@@ -209,9 +217,20 @@ app.post('/api/posts/:id/comments', auth, wrap(async (req, res) => {
   const comment = await one(`${CM_Q} WHERE c.id=$1`, [id]), { n } = await one('SELECT count(*)::int n FROM comments WHERE post_id=$1', [pid]);
   io.emit('comment', { post_id: pid, count: n, comment }); res.json(comment);
 }));
+// to_id = 0 is the "Everyone" group chat
+const MSG_Q = `SELECT m.id,m.from_id,m.to_id,m.body,m.deleted,m.created_at,u.name,u.avatar_url FROM messages m JOIN users u ON u.id=m.from_id`;
 app.get('/api/messages/:id', auth, wrap(async (req, res) => {
   const o = parseInt(req.params.id, 10) || 0;
-  res.json((await q(`SELECT * FROM messages WHERE (from_id=$1 AND to_id=$2) OR (from_id=$2 AND to_id=$1) ORDER BY id DESC LIMIT 200`, [req.uid, o])).reverse());
+  const rows = o === 0 ? await q(`${MSG_Q} WHERE m.to_id=0 ORDER BY m.id DESC LIMIT 200`)
+    : await q(`${MSG_Q} WHERE (m.from_id=$1 AND m.to_id=$2) OR (m.from_id=$2 AND m.to_id=$1) ORDER BY m.id DESC LIMIT 200`, [req.uid, o]);
+  res.json(rows.reverse());
+}));
+
+app.delete('/api/messages/:id', auth, wrap(async (req, res) => {
+  const m = await one(`UPDATE messages SET body='',deleted=true WHERE id=$1 AND from_id=$2 AND NOT COALESCE(deleted,false) RETURNING id,from_id,to_id`, [parseInt(req.params.id, 10) || 0, req.uid]);
+  if (!m) return res.status(404).json({ error: 'Message not found, or it isn’t yours.' });
+  (m.to_id === 0 ? io : io.to('u' + m.to_id).to('u' + m.from_id)).emit('message-deleted', { id: m.id });
+  res.json({ ok: true });
 }));
 
 // ---------- real-time chat + presence ----------
@@ -226,10 +245,11 @@ io.on('connection', s => {
   s.emit('online-list', [...online.keys()]);
   s.on('send', async ({ to, body } = {}, ack) => {
     try {
-      body = clean(body, 2000); to = parseInt(to, 10);
-      if (!body || !to || !(await one('SELECT 1 FROM users WHERE id=$1', [to]))) return ack && ack({ error: true });
-      const m = await one('INSERT INTO messages(from_id,to_id,body) VALUES($1,$2,$3) RETURNING *', [s.uid, to, body]);
-      io.to('u' + to).to('u' + s.uid).emit('message', m);
+      body = clean(body, 2000); to = parseInt(to, 10) || 0; // to = 0 means the Chat Room
+      if (!body || (to !== 0 && !(await one('SELECT 1 FROM users WHERE id=$1 AND verified', [to])))) return ack && ack({ error: true });
+      const { id } = await one('INSERT INTO messages(from_id,to_id,body) VALUES($1,$2,$3) RETURNING id', [s.uid, to, body]);
+      const m = await one(`${MSG_Q} WHERE m.id=$1`, [id]);
+      (to === 0 ? io : io.to('u' + to).to('u' + s.uid)).emit('message', m);
       ack && ack({ ok: true });
     } catch (e) { console.error(e); ack && ack({ error: true }); }
   });
