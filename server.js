@@ -8,6 +8,7 @@ const SECRET = env.JWT_SECRET || 'dev-only-change-me';
 if (!env.JWT_SECRET) console.warn('Set JWT_SECRET in production!');
 if (!env.DATABASE_URL) { console.error('DATABASE_URL is not set (see README).'); process.exit(1); }
 const SMS = !!(env.TWILIO_SID && env.TWILIO_TOKEN && env.TWILIO_FROM);
+const OWNERS = new Set((env.ADMIN_EMAILS || '').toLowerCase().split(',').map(x => x.trim()).filter(Boolean)); // always admins; can't be changed from the dashboard
 const escRe = x => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }]; // add a TURN server for reliable calls (see README)
 if (env.TURN_URLS) ICE.push({ urls: env.TURN_URLS.split(',').map(x => x.trim()), username: env.TURN_USERNAME || '', credential: env.TURN_CREDENTIAL || '' });
@@ -28,7 +29,10 @@ async function init() {
   await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT`);
   await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS verified BOOLEAN`);
   await q(`UPDATE users SET verified=true WHERE verified IS NULL`); // accounts made before verification existed
+  await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'user'`);
+  await q(`ALTER TABLE users ADD COLUMN IF NOT EXISTS suspended BOOLEAN DEFAULT false`);
   await q(`CREATE TABLE IF NOT EXISTS posts(id SERIAL PRIMARY KEY, user_id INT NOT NULL, body TEXT NOT NULL DEFAULT '', created_at TIMESTAMPTZ DEFAULT now())`);
+  await q(`ALTER TABLE posts ADD COLUMN IF NOT EXISTS pinned BOOLEAN DEFAULT false`);
   await q(`ALTER TABLE posts ADD COLUMN IF NOT EXISTS media_url TEXT`);
   await q(`ALTER TABLE posts ADD COLUMN IF NOT EXISTS media_type TEXT`);
   await q(`CREATE TABLE IF NOT EXISTS likes(post_id INT NOT NULL, user_id INT NOT NULL, PRIMARY KEY(post_id,user_id))`);
@@ -40,9 +44,11 @@ async function init() {
   await q(`CREATE TABLE IF NOT EXISTS push_subs(id SERIAL PRIMARY KEY, user_id INT NOT NULL, endpoint TEXT NOT NULL, p256dh TEXT NOT NULL, auth TEXT NOT NULL)`);
   await q(`CREATE TABLE IF NOT EXISTS settings(k TEXT PRIMARY KEY, v TEXT NOT NULL)`);
   await q(`CREATE INDEX IF NOT EXISTS idx_msg ON messages(from_id,to_id)`);
+  await syncAdmins();
 }
+async function syncAdmins() { for (const e of OWNERS) await q(`UPDATE users SET role='admin' WHERE email=$1 AND verified`, [e]); }
 
-const PUB = 'id,name,email,avatar_url,join_year,join_class,left_year,left_class,status,detail,contact,created_at';
+const PUB = 'id,name,email,avatar_url,role,join_year,join_class,left_year,left_class,status,detail,contact,created_at';
 const online = new Map();
 const sign = u => jwt.sign({ id: u.id }, SECRET, { expiresIn: '30d' });
 const clean = (v, max = 200) => String(v ?? '').trim().slice(0, max);
@@ -104,10 +110,16 @@ const limit = (req, res, next) => {
   arr.push(now); hits.set(k, arr);
   arr.length > 20 ? res.status(429).json({ error: 'Too many attempts. Try again in a minute.' }) : next();
 };
-const auth = (req, res, next) => {
-  try { req.uid = jwt.verify((req.headers.authorization || '').replace('Bearer ', ''), SECRET).id; next(); }
-  catch { res.status(401).json({ error: 'Please log in again.' }); }
+const auth = async (req, res, next) => {
+  let id; try { id = jwt.verify((req.headers.authorization || '').replace('Bearer ', ''), SECRET).id; } catch { return res.status(401).json({ error: 'Please log in again.' }); }
+  try {
+    const u = await one('SELECT id,role,suspended FROM users WHERE id=$1', [id]);
+    if (!u) return res.status(401).json({ error: 'Please log in again.' });
+    if (u.suspended) return res.status(401).json({ error: 'Your account has been suspended. Please contact an administrator.', suspended: true });
+    req.uid = u.id; req.role = u.role || 'user'; next();
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Server error. Please try again.' }); }
 };
+const admin = (req, res, next) => (req.role === 'admin' ? next() : res.status(403).json({ error: 'Admins only.' }));
 const byEmail = e => one('SELECT * FROM users WHERE email=$1', [clean(e, 120).toLowerCase()]);
 const channelOf = c => (c === 'phone' && SMS ? 'phone' : 'email');
 
@@ -139,7 +151,8 @@ app.post('/api/verify', limit, wrap(async (req, res) => {
   const u = await byEmail(req.body.email);
   const bad = u && !u.verified ? await checkCode(u, 'verify', req.body.code) : 'That code is wrong or has expired. Request a new one.';
   if (bad) return res.status(400).json({ error: bad });
-  const user = await one(`UPDATE users SET verified=true WHERE id=$1 RETURNING ${PUB}`, [u.id]);
+  await q('UPDATE users SET verified=true WHERE id=$1', [u.id]); await syncAdmins();
+  const user = await one(`SELECT ${PUB} FROM users WHERE id=$1`, [u.id]);
   res.json({ token: sign(user), user });
 }));
 
@@ -161,10 +174,12 @@ app.post('/api/reset', limit, wrap(async (req, res) => {
 app.post('/api/login', limit, wrap(async (req, res) => {
   const u = await byEmail(req.body.email);
   if (!u || !bcrypt.compareSync(String(req.body.password || ''), u.password)) return res.status(401).json({ error: 'Email or password is incorrect.' });
+  if (u.suspended) return res.status(403).json({ error: 'Your account has been suspended. Please contact an administrator.' });
   if (!u.verified) {
     await issueCode(u, 'verify', 'email').catch(() => {});
     return res.status(403).json({ error: 'Please confirm your account first.', needsVerify: true, email: u.email });
   }
+  await syncAdmins();
   const user = await one(`SELECT ${PUB} FROM users WHERE id=$1`, [u.id]);
   res.json({ token: sign(user), user });
 }));
@@ -178,14 +193,14 @@ app.put('/api/me/avatar', auth, wrap(async (req, res) => {
   res.json(await one(`UPDATE users SET avatar_url=$1 WHERE id=$2 RETURNING ${PUB}`, [req.body.url, req.uid]));
 }));
 app.get('/api/users', auth, wrap(async (req, res) =>
-  res.json((await q(`SELECT ${PUB} FROM users WHERE id<>$1 AND verified ORDER BY name`, [req.uid])).map(withOnline))));
+  res.json((await q(`SELECT ${PUB} FROM users WHERE id<>$1 AND verified AND NOT COALESCE(suspended,false) ORDER BY name`, [req.uid])).map(withOnline))));
 app.get('/api/users/:id', auth, wrap(async (req, res) => {
   const id = parseInt(req.params.id, 10), u = id && await one(`SELECT ${PUB} FROM users WHERE id=$1 AND verified`, [id]);
   u ? res.json(withOnline(u)) : res.status(404).json({ error: 'Student not found.' });
 }));
 
 // ---------- posts, likes, comments ----------
-const POST_Q = `SELECT p.id,p.body,p.media_url,p.media_type,p.created_at,u.id user_id,u.name,u.avatar_url,u.join_year,u.left_year FROM posts p JOIN users u ON u.id=p.user_id`;
+const POST_Q = `SELECT p.id,p.body,p.media_url,p.media_type,p.created_at,u.id user_id,u.name,u.avatar_url,u.role,p.pinned,u.join_year,u.left_year FROM posts p JOIN users u ON u.id=p.user_id`;
 async function decorate(rows, uid) { // add like/comment counts
   if (!rows.length) return rows;
   const ids = rows.map(r => r.id).join(',');
@@ -194,19 +209,22 @@ async function decorate(rows, uid) { // add like/comment counts
   const C = await q(`SELECT post_id,count(*)::int n FROM comments WHERE post_id IN (${ids}) GROUP BY post_id`);
   return rows.map(r => ({ ...r, like_count: L.find(x => x.post_id === r.id)?.n || 0, liked: M.some(x => x.post_id === r.id), comment_count: C.find(x => x.post_id === r.id)?.n || 0 }));
 }
-app.get('/api/posts', auth, wrap(async (req, res) => res.json(await decorate(await q(`${POST_Q} ORDER BY p.id DESC LIMIT 100`), req.uid))));
+app.get('/api/posts', auth, wrap(async (req, res) => res.json(await decorate(await q(`${POST_Q} ORDER BY COALESCE(p.pinned,false) DESC, p.id DESC LIMIT 100`), req.uid))));
 app.post('/api/posts', auth, wrap(async (req, res) => {
   const body = clean(req.body.body, 1000), type = req.body.media_type === 'video' ? 'video' : 'image';
   const url = req.body.media_url ? (mediaOk(req.body.media_url, type) ? req.body.media_url : null) : undefined;
   if (url === null) return res.status(400).json({ error: 'Invalid photo or video.' });
   if (!body && !url) return res.status(400).json({ error: 'Write something or add a photo or video.' });
-  const { id } = await one('INSERT INTO posts(user_id,body,media_url,media_type) VALUES($1,$2,$3,$4) RETURNING id', [req.uid, body, url || null, url ? type : null]);
+  const pin = req.role === 'admin' && !!req.body.announce; // admins can pin a post as an announcement
+  const { id } = await one('INSERT INTO posts(user_id,body,media_url,media_type,pinned) VALUES($1,$2,$3,$4,$5) RETURNING id', [req.uid, body, url || null, url ? type : null, pin]);
   const post = { ...(await one(`${POST_Q} WHERE p.id=$1`, [id])), like_count: 0, liked: false, comment_count: 0 };
   io.emit('post', post); res.json(post);
+  if (pin) q('SELECT id FROM users WHERE verified AND id<>$1', [req.uid]).then(r => pushTo(r.map(x => x.id),
+    { title: '📢 Announcement from ' + post.name, body: (body || 'New announcement').slice(0, 140), url: '/', tag: 'announce', kind: 'message' })).catch(() => {});
 }));
 app.delete('/api/posts/:id', auth, wrap(async (req, res) => {
   const pid = parseInt(req.params.id, 10) || 0;
-  const gone = await one('DELETE FROM posts WHERE id=$1 AND user_id=$2 RETURNING id', [pid, req.uid]);
+  const gone = req.role === 'admin' ? await one('DELETE FROM posts WHERE id=$1 RETURNING id', [pid]) : await one('DELETE FROM posts WHERE id=$1 AND user_id=$2 RETURNING id', [pid, req.uid]);
   if (!gone) return res.status(404).json({ error: 'Post not found, or it isn’t yours.' });
   await q('DELETE FROM likes WHERE post_id=$1', [pid]); await q('DELETE FROM comments WHERE post_id=$1', [pid]);
   io.emit('post-deleted', { id: pid }); res.json({ ok: true });
@@ -239,8 +257,18 @@ app.get('/api/messages/:id', auth, wrap(async (req, res) => {
   res.json(rows.reverse());
 }));
 
+app.delete('/api/comments/:id', auth, wrap(async (req, res) => {
+  const c = await one('SELECT id,post_id,user_id FROM comments WHERE id=$1', [parseInt(req.params.id, 10) || 0]);
+  if (!c || (c.user_id !== req.uid && req.role !== 'admin')) return res.status(404).json({ error: 'Comment not found, or it isn’t yours.' });
+  await q('DELETE FROM comments WHERE id=$1', [c.id]);
+  const { n } = await one('SELECT count(*)::int n FROM comments WHERE post_id=$1', [c.post_id]);
+  io.emit('comment-deleted', { id: c.id, post_id: c.post_id, count: n }); res.json({ ok: true });
+}));
 app.delete('/api/messages/:id', auth, wrap(async (req, res) => {
-  const m = await one(`UPDATE messages SET body='',att_url=NULL,att_type=NULL,att_name=NULL,att_size=NULL,deleted=true WHERE id=$1 AND from_id=$2 AND NOT COALESCE(deleted,false) RETURNING id,from_id,to_id`, [parseInt(req.params.id, 10) || 0, req.uid]);
+  const wipe = `UPDATE messages SET body='',att_url=NULL,att_type=NULL,att_name=NULL,att_size=NULL,deleted=true WHERE id=$1 AND NOT COALESCE(deleted,false)`;
+  const id = parseInt(req.params.id, 10) || 0;
+  const m = (await one(`${wipe} AND from_id=$2 RETURNING id,from_id,to_id`, [id, req.uid]))
+    || (req.role === 'admin' ? await one(`${wipe} AND to_id=0 RETURNING id,from_id,to_id`, [id]) : null);
   if (!m) return res.status(404).json({ error: 'Message not found, or it isn’t yours.' });
   (m.to_id === 0 ? io : io.to('u' + m.to_id).to('u' + m.from_id)).emit('message-deleted', { id: m.id });
   res.json({ ok: true });
@@ -283,8 +311,76 @@ app.post('/api/push/unsubscribe', auth, wrap(async (req, res) => {
 app.get('/api/call-config', auth, (req, res) => res.json({ iceServers: ICE }));
 
 // ---------- real-time chat + presence ----------
-io.use((s, next) => {
-  try { s.uid = jwt.verify(s.handshake.auth.token, SECRET).id; next(); } catch { next(new Error('auth')); }
+// ---------- admin dashboard ----------
+async function target(req, res) { // the member an admin wants to change, or null (after sending the error)
+  const id = parseInt(req.params.id, 10) || 0, u = await one('SELECT id,name,email,role,verified FROM users WHERE id=$1', [id]);
+  if (!u) { res.status(404).json({ error: 'Member not found.' }); return null; }
+  if (id === req.uid) { res.status(400).json({ error: 'You can’t do that to your own account.' }); return null; }
+  if (OWNERS.has(u.email)) { res.status(403).json({ error: 'This is an owner account and can’t be changed.' }); return null; }
+  return u;
+}
+app.get('/api/admin/stats', auth, admin, wrap(async (req, res) => {
+  const n = async sql => (await one(sql)).n;
+  const [users, verified, suspended, admins, posts, comments, dms, room, newUsers, newPosts] = await Promise.all([
+    n('SELECT count(*)::int n FROM users'), n('SELECT count(*)::int n FROM users WHERE verified'), n('SELECT count(*)::int n FROM users WHERE suspended'),
+    n(`SELECT count(*)::int n FROM users WHERE role='admin'`), n('SELECT count(*)::int n FROM posts'), n('SELECT count(*)::int n FROM comments'),
+    n('SELECT count(*)::int n FROM messages WHERE to_id<>0'), n('SELECT count(*)::int n FROM messages WHERE to_id=0'),
+    n(`SELECT count(*)::int n FROM users WHERE verified AND created_at > now() - interval '7 days'`), n(`SELECT count(*)::int n FROM posts WHERE created_at > now() - interval '7 days'`)]);
+  res.json({ users: verified, pending: users - verified, suspended, admins, online: online.size, posts, comments, dms, room, newUsers, newPosts, groupCall: gstate() });
+}));
+app.get('/api/admin/users', auth, admin, wrap(async (req, res) => res.json((await q(
+  `SELECT id,name,email,contact,avatar_url,join_year,join_class,left_year,left_class,status,detail,role,verified,suspended,created_at FROM users ORDER BY id DESC LIMIT 2000`))
+  .map(u => ({ ...u, suspended: !!u.suspended, role: u.role || 'user', online: online.has(u.id), owner: OWNERS.has(u.email) })))));
+app.post('/api/admin/users/:id/suspend', auth, admin, wrap(async (req, res) => {
+  const u = await target(req, res); if (!u) return;
+  if (u.role === 'admin') return res.status(403).json({ error: 'Remove admin rights first.' });
+  const on = !!req.body.suspended;
+  await q('UPDATE users SET suspended=$1 WHERE id=$2', [on, u.id]);
+  if (on) { await q('DELETE FROM push_subs WHERE user_id=$1', [u.id]); leaveGroup(u.id); io.in('u' + u.id).disconnectSockets(true); }
+  res.json({ ok: true });
+}));
+app.post('/api/admin/users/:id/role', auth, admin, wrap(async (req, res) => {
+  const u = await target(req, res); if (!u) return;
+  if (!u.verified) return res.status(400).json({ error: 'Verify this member first.' });
+  await q('UPDATE users SET role=$1 WHERE id=$2', [req.body.role === 'admin' ? 'admin' : 'user', u.id]); res.json({ ok: true });
+}));
+app.post('/api/admin/users/:id/verify', auth, admin, wrap(async (req, res) => {
+  const u = await target(req, res); if (!u) return;
+  await q('UPDATE users SET verified=true WHERE id=$1', [u.id]); await q('DELETE FROM codes WHERE user_id=$1', [u.id]); res.json({ ok: true });
+}));
+app.delete('/api/admin/users/:id', auth, admin, wrap(async (req, res) => {
+  const u = await target(req, res); if (!u) return;
+  if (u.role === 'admin') return res.status(403).json({ error: 'Remove admin rights first.' });
+  const pids = (await q('SELECT id FROM posts WHERE user_id=$1', [u.id])).map(r => r.id);
+  if (pids.length) { const l = pids.join(','); await q(`DELETE FROM likes WHERE post_id IN (${l})`); await q(`DELETE FROM comments WHERE post_id IN (${l})`); await q('DELETE FROM posts WHERE user_id=$1', [u.id]); }
+  for (const t of ['likes WHERE user_id', 'comments WHERE user_id', 'push_subs WHERE user_id', 'codes WHERE user_id']) await q(`DELETE FROM ${t}=$1`, [u.id]);
+  await q('DELETE FROM messages WHERE from_id=$1 OR to_id=$1', [u.id]); await q('DELETE FROM users WHERE id=$1', [u.id]);
+  pids.forEach(id => io.emit('post-deleted', { id })); leaveGroup(u.id); io.in('u' + u.id).disconnectSockets(true); io.emit('user-removed', { id: u.id });
+  res.json({ ok: true });
+}));
+app.post('/api/admin/end-call', auth, admin, wrap(async (req, res) => {
+  gcall.parts.clear(); gcall.by = null; gcall.startedAt = 0; io.emit('gcall:state', null); res.json({ ok: true });
+}));
+app.post('/api/posts/:id/pin', auth, admin, wrap(async (req, res) => {
+  const r = await one('UPDATE posts SET pinned=$1 WHERE id=$2 RETURNING id', [!!req.body.pinned, parseInt(req.params.id, 10) || 0]);
+  if (!r) return res.status(404).json({ error: 'Post not found.' });
+  io.emit('post-updated', {}); res.json({ ok: true });
+}));
+app.get('/api/admin/export.csv', auth, admin, wrap(async (req, res) => {
+  const rows = await q('SELECT name,email,contact,join_year,join_class,left_year,left_class,status,detail,verified,suspended,role,created_at FROM users ORDER BY name');
+  const cell = v => { let t = v == null ? '' : v instanceof Date ? v.toISOString() : String(v); if (/^(=|@|\t|\r|[+-](?!\d))/.test(t)) t = "'" + t; return '"' + t.replace(/"/g, '""') + '"'; }; // stops spreadsheet formula tricks
+  const head = ['Name', 'Email', 'Phone', 'Joined year', 'Joined class', 'Left year', 'Left class', 'Now', 'Course / occupation', 'Verified', 'Suspended', 'Role', 'Registered'];
+  const csv = [head.map(cell).join(',')].concat(rows.map(r => [r.name, r.email, r.contact, r.join_year, r.join_class, r.left_year, r.left_class,
+    r.status === 'occupation' ? 'Working' : 'Studying', r.detail, r.verified ? 'yes' : 'no', r.suspended ? 'yes' : 'no', r.role || 'user', r.created_at].map(cell).join(','))).join('\r\n');
+  res.set({ 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': 'attachment; filename="shining-star-members.csv"' }).send('\ufeff' + csv);
+}));
+
+io.use(async (s, next) => {
+  try {
+    const id = jwt.verify(s.handshake.auth.token, SECRET).id, u = await one('SELECT id,suspended FROM users WHERE id=$1', [id]);
+    if (!u || u.suspended) return next(new Error('auth'));
+    s.uid = id; next();
+  } catch { next(new Error('auth')); }
 });
 
 // ---- voice / group calls (signalling only; audio flows directly between phones) ----
