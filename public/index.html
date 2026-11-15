@@ -172,6 +172,23 @@ button{touch-action:manipulation}
 .cbtns{display:flex;gap:2.5rem;align-items:flex-start}
 .cb2{width:68px;height:68px;border-radius:50%;font-size:26px;display:grid;place-items:center;color:#fff;background:var(--panel2)}.cb2.on{background:#fff;color:#111}.cb2.go{background:#22c55e;animation:pulse 1.4s infinite}.cb2.no{background:#ef4444}
 .cbtns .lab{display:block;font-size:12px;color:var(--mute);margin-top:.4rem}
+
+.sgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:.7rem;margin:1rem 0}
+.sc{background:linear-gradient(160deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:16px;padding:.8rem;display:flex;flex-direction:column}
+.sc span{font-size:20px}.sc b{font-size:1.7rem;font-family:var(--serif);line-height:1.2}.sc small{color:var(--mute)}
+.atools{display:flex;gap:.6rem;align-items:center;flex-wrap:wrap}.atools p{flex:1;min-width:200px;color:var(--mute)}
+.ahead{display:flex;gap:.8rem;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:.6rem}.ahead input{max-width:320px}
+.au{display:flex;gap:.8rem;align-items:flex-start;padding:.9rem 0;border-top:1px solid var(--line);flex-wrap:wrap}
+.au .ai2{flex:1;min-width:180px;display:flex;flex-direction:column}.au small{color:var(--mute);word-break:break-word}
+.aact{display:flex;gap:.4rem;flex-wrap:wrap;width:100%}
+.aact button{background:var(--panel2);color:var(--text);min-height:44px;padding:0 1rem;border-radius:999px;font-size:13px}
+.aact .dng{background:#ff7a8a22;color:var(--bad);margin-left:auto}
+.bd{display:inline-block;font-size:11px;padding:.05rem .5rem;border-radius:99px;margin-left:.3rem;vertical-align:middle;background:var(--panel2);color:var(--mute)}
+.bd.a{background:#ffc85722;color:var(--gold)}.bd.s{background:#ff7a8a22;color:var(--bad)}.bd.o{background:#4be3a122;color:var(--ok)}
+.adm-b{display:inline-block;font-size:12px;padding:.05rem .55rem;border-radius:99px;background:#ffc85722;color:var(--gold);margin:.2rem 0}
+.post.pinned{border-color:var(--gold)}.pa{display:flex;gap:.1rem;margin-left:auto}
+.cdel{background:none;color:var(--mute);font-size:14px;width:40px;height:40px;border-radius:50%;flex:none;align-self:center}.cdel:hover{color:var(--bad)}
+.compose .bar{flex-wrap:wrap;gap:.4rem}
 </style>
 </head>
 <body>
@@ -227,21 +244,28 @@ button{touch-action:manipulation}
 
 <div id="app" class="hidden">
  <header><span class="logo">⭐ Shining Star</span>
-  <nav class="nav"><button data-v="home" class="on">Home</button><button data-v="chat">Chats</button><button data-v="room">Chat Room</button></nav>
+  <nav class="nav"><button data-v="home" class="on">Home</button><button data-v="chat">Chats</button><button data-v="room">Chat Room</button><button data-v="admin" class="adminOnly hidden">🛡 Admin</button></nav>
   <button class="me" id="meBtn" title="Your profile"><span id="meName"></span><div class="av sm" id="meAv"></div></button>
   <button class="btn ghost" id="out" style="padding:.45rem 1rem">Log out</button></header>
- <nav class="nav tabbar" aria-label="Main"><button data-v="home" class="on"><span class="ic">🏠</span>Home</button><button data-v="chat"><span class="ic">💬</span>Chats</button><button data-v="room"><span class="ic">👥</span>Room</button></nav>
+ <nav class="nav tabbar" aria-label="Main"><button data-v="home" class="on"><span class="ic">🏠</span>Home</button><button data-v="chat"><span class="ic">💬</span>Chats</button><button data-v="room"><span class="ic">👥</span>Room</button><button data-v="admin" class="adminOnly hidden"><span class="ic">🛡</span>Admin</button></nav>
  <main>
   <section id="home" class="view feed">
    <div class="card compose"><textarea id="body" maxlength="1000" placeholder="Share a memory, news or a hello with everyone…"></textarea>
     <div id="prev2"></div>
-    <div class="bar"><label class="attach">📷 Photo / video<input type="file" id="file" accept="image/*,video/*" hidden></label><span id="cnt">0 / 1000</span><button class="btn" id="postBtn">Post</button></div></div>
+    <div class="bar"><label class="attach">📷 Photo / video<input type="file" id="file" accept="image/*,video/*" hidden></label><label class="attach adminOnly hidden" title="Pin this post and notify everyone"><input type="checkbox" id="annc"> 📢 Announce</label><span id="cnt">0 / 1000</span><button class="btn" id="postBtn">Post</button></div></div>
    <div id="posts"></div>
   </section>
   <section id="chatV" class="view hidden"><div class="card chat" id="chat">
    <div class="side"><input id="q" placeholder="Search classmates" type="search"><div class="list" id="list"></div></div>
    <div class="conv" id="conv"><div class="none">Pick a classmate to start chatting 💬</div></div>
   </div></section>
+  <section id="adminV" class="view adm hidden">
+   <h2>🛡 Admin dashboard</h2>
+   <div class="sgrid" id="astats"></div>
+   <div class="card atools"><p id="acall">…</p><button class="btn ghost hidden" id="aendcall">End group call</button><button class="btn ghost" id="aexp">⬇ Download members (CSV)</button><button class="btn ghost" id="aref">↻ Refresh</button></div>
+   <div class="card" style="margin-top:1rem"><div class="ahead"><h3>Members</h3><input id="aq" type="search" placeholder="Search name, email or phone"></div><div id="ausers"></div></div>
+   <p class="mute" style="margin-top:1rem">Moderating: you also see a 🗑 on every post, comment and Chat Room message, and a 📍 to pin a post as an announcement.</p>
+  </section>
  </main>
 </div>
 <div id="modal"></div>
@@ -258,7 +282,7 @@ let token=localStorage.getItem('ss_token'),me,users=[],active=null,unread={},soc
 
 async function api(p,o={}){
  const r=await fetch('/api'+p,{method:o.method||'GET',headers:{'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},body:o.body&&JSON.stringify(o.body)});
- const d=await r.json().catch(()=>({}));if(!r.ok){if(r.status===401&&token&&p!=='/login')logout();throw Object.assign(new Error(d.error||'Something went wrong.'),{data:d})}return d}
+ const d=await r.json().catch(()=>({}));if(!r.ok){if(r.status===401&&token&&p!=='/login'){if(d.suspended)sessionStorage.ss_note=d.error;logout()}throw Object.assign(new Error(d.error||'Something went wrong.'),{data:d})}return d}
 const hue=n=>[...String(n)].reduce((a,c)=>a+c.charCodeAt(0)*7,0)%360;
 const initials=n=>n.split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase();
 const thumb=u=>u.replace('/upload/','/upload/c_fill,g_face,w_160,h_160/');
@@ -324,23 +348,29 @@ async function start(user){
  socket.on('post-deleted',({id})=>{$('#post'+id)?.remove();if(!$('#posts .post'))$('#posts').innerHTML='<div class="empty">No posts yet. Be the first to say hello! 👋</div>'});
  socket.on('presence',({id,online})=>{const u=users.find(x=>x.id===id);if(u){u.online=online;renderList();if(active?.id===id||active?.group)renderHead()}});
  socket.on('online-list',ids=>{users.forEach(u=>u.online=ids.includes(u.id));renderList()});
- socket.on('post',p=>{if(!$(`#post${p.id}`))$('#posts').insertAdjacentHTML('afterbegin',postHtml(p));$('#posts .empty')?.remove()});
+ socket.on('post',p=>{if($(`#post${p.id}`))return;$('#posts .empty')?.remove();const pins=$$('#posts .post.pinned'),last=pins[pins.length-1];
+  if(p.pinned||!last)$('#posts').insertAdjacentHTML('afterbegin',postHtml(p));else last.insertAdjacentHTML('afterend',postHtml(p))});
  socket.on('message',m=>{const other=m.to_id===0?0:m.from_id===me.id?m.to_id:m.from_id;
   if(active?.id===other){addMsg(m);$('#typing').textContent=''}
   else if(m.from_id!==me.id){unread[other]=(unread[other]||0)+1;renderList();toast(other===0?'New message in Chat Room':'New message from '+(users.find(u=>u.id===other)?.name||'a classmate'))}});
  socket.on('message-deleted',({id})=>{const el=$(`#msgs [data-id="${id}"]`);if(!el)return;
   const t=el.querySelector('time')?.outerHTML||'',mn=el.querySelector('.mn')?.outerHTML||'';el.classList.remove('sel');el.classList.add('gone');el.innerHTML=mn+'🚫 <i>This message was deleted</i>'+t});
  wireCalls();
+ socket.on('post-updated',()=>loadPosts());
+ socket.on('comment-deleted',({id,post_id,count})=>{const card=$('#post'+post_id);if(!card)return;card.querySelector(`.c[data-cid="${id}"]`)?.remove();card.querySelector('.cc').textContent=count?count+' comment'+(count>1?'s':''):''});
+ socket.on('user-removed',({id})=>{users=users.filter(u=>u.id!==id);if(active?.id===id){$('#chat').classList.remove('open');active=null;$('#conv').innerHTML='<div class="none">This member was removed.</div>'}renderList()});
  socket.on('typing',({from})=>{if(active?.id===from){$('#typing').textContent=active.name.split(' ')[0]+' is typing…';clearTimeout(typingT);typingT=setTimeout(()=>$('#typing').textContent='',1800)}});
  [users]=[await api('/users')];renderList();loadPosts();afterStart();
 }
-$$('.nav button').forEach(b=>b.onclick=()=>{const v=b.dataset.v;$$('.nav button').forEach(x=>x.classList.toggle('on',x.dataset.v===v));$('#home').classList.toggle('hidden',v!=='home');$('#chatV').classList.toggle('hidden',v==='home');if(v==='room')openChat(0);window.scrollTo(0,0)});
+$$('.nav button').forEach(b=>b.onclick=()=>{const v=b.dataset.v;$$('.nav button').forEach(x=>x.classList.toggle('on',x.dataset.v===v));
+ $('#home').classList.toggle('hidden',v!=='home');$('#chatV').classList.toggle('hidden',v!=='chat'&&v!=='room');$('#adminV').classList.toggle('hidden',v!=='admin');
+ if(v==='room')openChat(0);if(v==='admin')loadAdmin();window.scrollTo(0,0)});
 $('#meBtn').onclick=()=>profile(me);
 
 // posts
-const cmHtml=c=>`<div class="c">${av(c,'sm')}<div class="cb"><b>${esc(c.name)}</b><span>${esc(c.body)}</span></div></div>`;
+const cmHtml=c=>`<div class="c" data-cid="${c.id}">${av(c,'sm')}<div class="cb"><b>${esc(c.name)}</b><span>${esc(c.body)}</span></div>${c.user_id===me.id||isAdmin()?'<button class="cdel" data-act="cdel" aria-label="Delete comment" title="Delete comment">🗑</button>':''}</div>`;
 const media=p=>p.media_url?(p.media_type==='video'?`<video src="${esc(p.media_url)}" controls preload="metadata"></video>`:`<img src="${esc(p.media_url)}" alt="Post photo" loading="lazy">`):'';
-const postHtml=p=>`<article class="card post" id="post${p.id}"><div class="ph"><div class="who" data-uid="${p.user_id}">${av(p)}<div><b>${esc(p.name)}</b><small>Class of ${p.left_year} · ${ago(p.created_at)}</small></div></div>${p.user_id===me.id?'<button class="del" data-act="del" aria-label="Delete post" title="Delete post">🗑</button>':''}</div>${p.body?`<p>${esc(p.body)}</p>`:''}<div class="pm">${media(p)}</div>
+const postHtml=p=>`<article class="card post ${p.pinned?'pinned':''}" id="post${p.id}"><div class="ph"><div class="who" data-uid="${p.user_id}">${av(p)}<div><b>${esc(p.name)}</b>${p.role==='admin'?' <span class="adm-b">🛡 Admin</span>':''}<small>${p.pinned?'📌 Announcement · ':''}Class of ${p.left_year} · ${ago(p.created_at)}</small></div></div><div class="pa">${isAdmin()?`<button class="del" data-act="pin" aria-label="${p.pinned?'Unpin':'Pin as announcement'}" title="${p.pinned?'Unpin':'Pin as announcement'}">${p.pinned?'📌':'📍'}</button>`:''}${p.user_id===me.id||isAdmin()?'<button class="del" data-act="del" aria-label="Delete post" title="Delete post">🗑</button>':''}</div></div>${p.body?`<p>${esc(p.body)}</p>`:''}<div class="pm">${media(p)}</div>
 <div class="stats"><span class="lc">${p.like_count?'👍 '+p.like_count:''}</span><button class="lnkb cc" data-act="toggle">${p.comment_count?p.comment_count+' comment'+(p.comment_count>1?'s':''):''}</button></div>
 <div class="acts"><button data-act="like" class="${p.liked?'liked':''}">👍 Like</button><button data-act="toggle">💬 Comment</button></div>
 <div class="cm hidden"><div class="clist"></div><form class="cf"><input placeholder="Write a comment…" maxlength="500" required><button class="btn">Send</button></form></div></article>`;
@@ -351,6 +381,8 @@ $('#posts').onclick=async e=>{
  const a=e.target.closest('[data-act]')?.dataset.act;
  if(a==='del'){if(!confirm('Delete this post? This cannot be undone.'))return;try{await api(`/posts/${id}`,{method:'DELETE'});card.remove();toast('Post deleted')}catch(x){toast(x.message)}return}
  if(a==='like'){try{const r=await api(`/posts/${id}/like`,{method:'POST'});card.querySelector('[data-act=like]').classList.toggle('liked',r.liked);card.querySelector('.lc').textContent=r.count?'👍 '+r.count:''}catch(x){toast(x.message)}}
+ if(a==='pin'){try{await api(`/posts/${id}/pin`,{method:'POST',body:{pinned:!card.classList.contains('pinned')}})}catch(x){toast(x.message)}}
+ if(a==='cdel'){const c=e.target.closest('.c');if(c&&confirm('Delete this comment?'))api('/comments/'+c.dataset.cid,{method:'DELETE'}).catch(x=>toast(x.message))}
  if(a==='toggle'){const c=card.querySelector('.cm');c.classList.toggle('hidden');
   if(!c.classList.contains('hidden')){if(!c.dataset.l){c.dataset.l=1;try{card.querySelector('.clist').innerHTML=(await api(`/posts/${id}/comments`)).map(cmHtml).join('')}catch(x){toast(x.message)}}c.querySelector('input').focus()}}};
 $('#posts').onsubmit=async e=>{e.preventDefault();const card=e.target.closest('.post'),i=e.target.querySelector('input'),v=i.value.trim();if(!v)return;
@@ -363,7 +395,7 @@ $('#file').onchange=e=>{pick=e.target.files[0]||null;const box=$('#prev2');box.i
 $('#postBtn').onclick=async()=>{const b=$('#body').value.trim();if(!b&&!pick)return toast('Write something or add a photo');
  const btn=$('#postBtn');btn.disabled=true;btn.textContent=pick?'Uploading…':'Posting…';
  try{let m={};if(pick){const up=await upload(pick);m={media_url:up.url,media_type:up.type}}
-  await api('/posts',{method:'POST',body:{body:b,...m}});$('#body').value='';$('#cnt').textContent='0 / 1000';pick=null;$('#file').value='';$('#prev2').innerHTML='';toast('Posted ✨')}
+  await api('/posts',{method:'POST',body:{body:b,...m,announce:!!$('#annc')?.checked}});$('#body').value='';$('#cnt').textContent='0 / 1000';pick=null;$('#file').value='';$('#prev2').innerHTML='';($('#annc')&&($('#annc').checked=false),toast('Posted ✨'))}
  catch(e){toast(e.message)}finally{btn.disabled=false;btn.textContent='Post'}};
 
 // chat
@@ -381,7 +413,7 @@ async function openChat(id){active=id===0?GROUP:users.find(u=>u.id===id);if(!act
  if(rec)stopRec(false);renderHead();$('#head').onclick=e=>{if(e.target.closest('.call')){active.group?startGroupCall():startCall(active);return}if(e.target.closest('.back')||active?.group)return;profile(active)};
  const ms=await api('/messages/'+id);if(active?.id!==id)return;
  $('#msgs').innerHTML=ms.length?'':'<div class="none">'+(active.group?'Start the conversation with everyone 👋':'Say hello to '+esc(active.name.split(' ')[0])+' 👋')+'</div>';ms.forEach(addMsg);
- $('#msgs').onclick=e=>{const b=e.target.closest('.m.me:not(.gone)');if(!b)return;
+ $('#msgs').onclick=e=>{const b=e.target.closest('.m:not(.gone)');if(!b||!(b.classList.contains('me')||(isAdmin()&&active?.group)))return;
   if(e.target.closest('.unsend')){if(confirm('Unsend this message? It will be removed for everyone.'))api('/messages/'+b.dataset.id,{method:'DELETE'}).catch(x=>toast(x.message));return}
   $$('.m.sel').forEach(x=>x!==b&&x.classList.remove('sel'));b.classList.toggle('sel')};
  $('#mi').oninput=()=>{if(!active?.group)socket.emit('typing',{to:id})};
@@ -390,12 +422,12 @@ function renderHead(){const g=active.group,on=users.filter(u=>u.online).length+1
  $('#head').innerHTML=`<button class="back" type="button" onclick="event.stopPropagation();stopRec(false);$('#chat').classList.remove('open');active=null;renderList()">‹</button>${g?grpAv(''):av(active,'',true)}<div><b>${esc(active.name)}</b><br><small class="${g||active.online?'on':''}">${g?on+' online':active.online?'Online · tap to view profile':'Offline · tap to view profile'}</small></div><button class="ib call" type="button" aria-label="${g?'Group call':'Call'}">📞${g?(gstate?' Join call':' Group call'):''}</button>`}
 function addMsg(m){const box=$('#msgs');box.querySelector('.none')?.remove();const mine=m.from_id===me.id;
  const who=active.group&&!mine?`<span class="mn" style="--h:${hue(m.name||'')}">${esc(m.name||'Student')}</span>`:'';
- box.insertAdjacentHTML('beforeend',`<div class="m ${mine?'me':''} ${m.deleted?'gone':''}" data-id="${m.id}">${who}${m.deleted?'🚫 <i>This message was deleted</i>':attHtml(m)+esc(m.body)}<time>${hm(m.created_at)}</time>${mine&&!m.deleted?'<button class="unsend" type="button">🗑 Unsend</button>':''}</div>`);box.scrollTop=box.scrollHeight}
+ box.insertAdjacentHTML('beforeend',`<div class="m ${mine?'me':''} ${m.deleted?'gone':''}" data-id="${m.id}">${who}${m.deleted?'🚫 <i>This message was deleted</i>':attHtml(m)+esc(m.body)}<time>${hm(m.created_at)}</time>${(mine||(isAdmin()&&active.group))&&!m.deleted?`<button class="unsend" type="button">${mine?'🗑 Unsend':'🛡 Remove'}</button>`:''}</div>`);box.scrollTop=box.scrollHeight}
 
 // profile
 async function openProfile(id){if(id===me.id)return profile(me);profile(users.find(u=>u.id===id)||await api('/users/'+id))}
 function profile(u){const w=u.status==='occupation';
- $('#modal').innerHTML=`<div class="modal" id="mb"><div class="card sheet" role="dialog" aria-label="Profile"><button class="x" aria-label="Close">×</button>${av(u,'lg')}<h2>${esc(u.name)}</h2>${u.id===me.id?'<label class="btn ghost chg">Change photo<input type="file" id="avf" accept="image/*" hidden></label> <button class="btn ghost chg" id="lo" type="button">Log out</button><br><button class="btn ghost chg" id="ntf" type="button">🔔 Notifications</button> <button class="btn ghost chg" id="inst" type="button">📲 Install app</button><br>':''}
+ $('#modal').innerHTML=`<div class="modal" id="mb"><div class="card sheet" role="dialog" aria-label="Profile"><button class="x" aria-label="Close">×</button>${av(u,'lg')}<h2>${esc(u.name)}</h2>${u.role==='admin'?'<span class="adm-b">🛡 Admin</span><br>':''}${u.id===me.id?'<label class="btn ghost chg">Change photo<input type="file" id="avf" accept="image/*" hidden></label> <button class="btn ghost chg" id="lo" type="button">Log out</button><br><button class="btn ghost chg" id="ntf" type="button">🔔 Notifications</button> <button class="btn ghost chg" id="inst" type="button">📲 Install app</button><br>':''}
  ${u.id===me.id?'<span class="st">This is you</span>':`<span class="st ${u.online?'on':''}"><i></i>${u.online?'Online now':'Offline'}</span>`}
  <dl><dt>Joined Shining Star</dt><dd>${u.join_year} · ${esc(u.join_class)}</dd><dt>Left Shining Star</dt><dd>${u.left_year} · ${esc(u.left_class)}</dd>
  <dt>${w?'Occupation':'Studying'}</dt><dd>${esc(u.detail)}</dd><dt>Contact</dt><dd>${esc(u.contact)}</dd><dt>Email</dt><dd>${esc(u.email)}</dd></dl></div></div>`;
@@ -410,7 +442,7 @@ document.addEventListener('keydown',e=>e.key==='Escape'&&($('#modal').innerHTML=
 
 // ---------- install + notifications ----------
 let deferredInstall=null,loggingOut=false,ice=[{urls:'stun:stun.l.google.com:19302'}];
-const standalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone;
+const standalone=()=>!!(window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||!!navigator.standalone;
 addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e});
 if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js').catch(()=>{});
  navigator.serviceWorker.addEventListener('message',e=>{if(e.data&&e.data.open!==undefined){location.hash=e.data.open;routeHash()}})}
@@ -426,6 +458,7 @@ function routeHash(){const h=location.hash;if(!h)return;history.replaceState(nul
  if(h==='#room')$('.tabbar [data-v=room]').click();
  else if(h.startsWith('#chat-')){const id=+h.slice(6);if(users.some(u=>u.id===id)){$('.tabbar [data-v=chat]').click();openChat(id)}}}
 async function afterStart(){
+ $$('.adminOnly').forEach(x=>x.classList.toggle('hidden',!isAdmin()));
  await cfgReady;try{ice=(await api('/call-config')).iceServers}catch{}
  routeHash();
  const banner=(t,act)=>{$('#home').insertAdjacentHTML('afterbegin',`<div class="card nb" id="nb"><span>${t}</span>${act?'<button class="btn" id="nbOn">Turn on</button>':''}<button class="btn ghost" id="nbNo">Not now</button></div>`);
@@ -555,6 +588,38 @@ function wireCalls(){
   renderParts();if(active?.group)renderHead();renderList()});
  socket.on('gcall:left',({id})=>peerGone(id));
  socket.on('gcall:signal',({from,data})=>onSignal(from,data,'gcall:signal'))}
+
+// ---------- admin dashboard ----------
+const isAdmin=()=>me?.role==='admin';
+const adm={users:[]};
+const sc=(n,l,i)=>`<div class="sc"><span>${i}</span><b>${n}</b><small>${l}</small></div>`;
+async function loadAdmin(){
+ try{const [s,u]=await Promise.all([api('/admin/stats'),api('/admin/users')]);adm.users=u;
+  $('#astats').innerHTML=[sc(s.users,'Members','👥'),sc(s.online,'Online now','🟢'),sc(s.newUsers,'New this week','🆕'),sc(s.pending,'Waiting for code','⏳'),sc(s.suspended,'Suspended','🚫'),sc(s.admins,'Admins','🛡'),sc(s.posts,'Posts','📝'),sc(s.newPosts,'Posts this week','📈'),sc(s.comments,'Comments','💬'),sc(s.dms,'Private messages','✉️'),sc(s.room,'Chat Room messages','👥')].join('');
+  $('#acall').textContent=s.groupCall?`📞 Group call running: ${s.groupCall.parts.length} in the call, started by ${s.groupCall.by}`:'No group call is running.';
+  $('#aendcall').classList.toggle('hidden',!s.groupCall);renderAdminUsers()}catch(x){toast(x.message)}}
+const adminActs=u=>{const locked=u.id===me.id||u.owner;let b='';
+ if(!u.verified)b+='<button data-a="verify">✔ Verify</button>';
+ if(!locked&&u.role!=='admin')b+=u.suspended?'<button data-a="unsuspend">↩ Unsuspend</button>':'<button data-a="suspend">⏸ Suspend</button>';
+ if(!locked&&u.verified)b+=u.role==='admin'?'<button data-a="rmadmin">Remove admin</button>':'<button data-a="makeadmin">🛡 Make admin</button>';
+ if(!locked&&u.role!=='admin')b+='<button data-a="delete" class="dng">🗑 Delete</button>';
+ return b};
+function renderAdminUsers(){const q=$('#aq').value.toLowerCase();
+ const l=adm.users.filter(u=>[u.name,u.email,u.contact,u.detail].join(' ').toLowerCase().includes(q));
+ $('#ausers').innerHTML=l.length?l.map(u=>`<div class="au" data-id="${u.id}">${av(u,'',true)}<div class="ai2"><span><b>${esc(u.name)}</b>${u.owner?'<span class="bd o">Owner</span>':u.role==='admin'?'<span class="bd a">Admin</span>':''}${u.suspended?'<span class="bd s">Suspended</span>':''}${u.verified?'':'<span class="bd">Not verified</span>'}</span>
+  <small>${esc(u.email)} · ${esc(u.contact||'')}</small><small>${u.join_year}–${u.left_year} (${esc(u.join_class)} → ${esc(u.left_class)}) · ${esc(u.detail||'')} · joined ${new Date(u.created_at).toLocaleDateString()}</small></div><div class="aact">${adminActs(u)}</div></div>`).join(''):'<div class="empty">No members found.</div>'}
+$('#aq').oninput=renderAdminUsers;$('#aref').onclick=loadAdmin;
+$('#aendcall').onclick=()=>api('/admin/end-call',{method:'POST'}).then(()=>{toast('Group call ended');loadAdmin()}).catch(x=>toast(x.message));
+$('#aexp').onclick=async()=>{try{const r=await fetch('/api/admin/export.csv',{headers:{Authorization:'Bearer '+token}});if(!r.ok)throw new Error('Could not download the list.');
+ const a=document.createElement('a');a.href=URL.createObjectURL(await r.blob());a.download='shining-star-members.csv';a.click()}catch(x){toast(x.message)}};
+$('#ausers').onclick=async e=>{const b=e.target.closest('[data-a]');if(!b)return;const id=+b.closest('.au').dataset.id,u=adm.users.find(x=>x.id===id),a=b.dataset.a;
+ try{
+  if(a==='delete'){if(prompt(`This permanently deletes ${u.name} and all their posts, comments and messages.\n\nType DELETE to confirm.`)!=='DELETE')return;await api('/admin/users/'+id,{method:'DELETE'})}
+  else if(a==='suspend'||a==='unsuspend'){if(a==='suspend'&&!confirm(`Suspend ${u.name}? They will be logged out and cannot sign in until you unsuspend them.`))return;await api(`/admin/users/${id}/suspend`,{method:'POST',body:{suspended:a==='suspend'}})}
+  else if(a==='verify')await api(`/admin/users/${id}/verify`,{method:'POST'});
+  else if(a==='makeadmin'||a==='rmadmin'){if(!confirm(a==='makeadmin'?`Make ${u.name} an admin? They will be able to moderate and manage members.`:`Remove admin rights from ${u.name}?`))return;await api(`/admin/users/${id}/role`,{method:'POST',body:{role:a==='makeadmin'?'admin':'user'}})}
+  toast('Done ✅');loadAdmin()}catch(x){toast(x.message)}};
+if(sessionStorage.ss_note){const n=sessionStorage.ss_note;sessionStorage.removeItem('ss_note');setTimeout(()=>toast(n),500)}
 
 // boot
 (async()=>{if(token){try{return start(await api('/me'))}catch{}}$('#auth').classList.remove('hidden')})();
