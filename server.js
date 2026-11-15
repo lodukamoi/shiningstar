@@ -1,12 +1,16 @@
 const express = require('express'), http = require('http'), path = require('path'), crypto = require('crypto');
 const { Pool } = require('pg'), bcrypt = require('bcryptjs'), jwt = require('jsonwebtoken');
 const { Server } = require('socket.io');
+const webpush = require('web-push');
 
 const env = process.env;
 const SECRET = env.JWT_SECRET || 'dev-only-change-me';
 if (!env.JWT_SECRET) console.warn('Set JWT_SECRET in production!');
 if (!env.DATABASE_URL) { console.error('DATABASE_URL is not set (see README).'); process.exit(1); }
 const SMS = !!(env.TWILIO_SID && env.TWILIO_TOKEN && env.TWILIO_FROM);
+const escRe = x => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }]; // add a TURN server for reliable calls (see README)
+if (env.TURN_URLS) ICE.push({ urls: env.TURN_URLS.split(',').map(x => x.trim()), username: env.TURN_USERNAME || '', credential: env.TURN_CREDENTIAL || '' });
 const app = express(), server = http.createServer(app), io = new Server(server);
 app.set('trust proxy', 1);
 const pool = new Pool({ connectionString: env.DATABASE_URL, ssl: env.DATABASE_URL.includes('localhost') ? false : { rejectUnauthorized: false }, max: 5 });
@@ -32,6 +36,9 @@ async function init() {
   await q(`CREATE TABLE IF NOT EXISTS messages(id SERIAL PRIMARY KEY, from_id INT NOT NULL, to_id INT NOT NULL, body TEXT NOT NULL, created_at TIMESTAMPTZ DEFAULT now())`);
   await q(`CREATE TABLE IF NOT EXISTS codes(id SERIAL PRIMARY KEY, user_id INT NOT NULL, purpose TEXT NOT NULL, code_hash TEXT NOT NULL, attempts INT DEFAULT 0, expires_at TIMESTAMPTZ NOT NULL, created_at TIMESTAMPTZ DEFAULT now())`);
   await q(`ALTER TABLE messages ADD COLUMN IF NOT EXISTS deleted BOOLEAN DEFAULT false`);
+  for (const c of ['att_url TEXT', 'att_type TEXT', 'att_name TEXT', 'att_size INT']) await q(`ALTER TABLE messages ADD COLUMN IF NOT EXISTS ${c}`);
+  await q(`CREATE TABLE IF NOT EXISTS push_subs(id SERIAL PRIMARY KEY, user_id INT NOT NULL, endpoint TEXT NOT NULL, p256dh TEXT NOT NULL, auth TEXT NOT NULL)`);
+  await q(`CREATE TABLE IF NOT EXISTS settings(k TEXT PRIMARY KEY, v TEXT NOT NULL)`);
   await q(`CREATE INDEX IF NOT EXISTS idx_msg ON messages(from_id,to_id)`);
 }
 
@@ -40,7 +47,7 @@ const online = new Map();
 const sign = u => jwt.sign({ id: u.id }, SECRET, { expiresIn: '30d' });
 const clean = (v, max = 200) => String(v ?? '').trim().slice(0, max);
 const withOnline = u => ({ ...u, online: online.has(u.id) });
-const mediaOk = (url, kinds) => new RegExp(`^https://res\\.cloudinary\\.com/[\\w-]+/(${kinds})/upload/`).test(url || '');
+const mediaOk = (url, kinds) => new RegExp(`^https://res\\.cloudinary\\.com/${env.CLOUDINARY_CLOUD_NAME ? escRe(env.CLOUDINARY_CLOUD_NAME) : '[\\w-]+'}/(${kinds})/upload/`).test(url || '');
 
 // ---------- verification / recovery codes ----------
 const hash = c => crypto.createHash('sha256').update(c + SECRET).digest('hex');
@@ -81,9 +88,15 @@ async function checkCode(u, purpose, code) {
 }
 
 app.use(express.json({ limit: '20kb' }));
+const ICONS = require('./icons.js'); // app icons are served from memory so only text files need uploading
+app.get('/icons/:name', (req, res) => {
+  const b = ICONS[req.params.name];
+  if (!b) return res.status(404).end();
+  res.set({ 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=604800' }).send(Buffer.from(b, 'base64'));
+});
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/health', (req, res) => res.send('ok'));
-app.get('/api/config', (req, res) => res.json({ cloud: env.CLOUDINARY_CLOUD_NAME || null, preset: env.CLOUDINARY_UPLOAD_PRESET || null, sms: SMS }));
+app.get('/api/config', (req, res) => res.json({ cloud: env.CLOUDINARY_CLOUD_NAME || null, preset: env.CLOUDINARY_UPLOAD_PRESET || null, sms: SMS, vapid: VAPID || null }));
 
 const hits = new Map();
 const limit = (req, res, next) => {
@@ -218,7 +231,7 @@ app.post('/api/posts/:id/comments', auth, wrap(async (req, res) => {
   io.emit('comment', { post_id: pid, count: n, comment }); res.json(comment);
 }));
 // to_id = 0 is the "Everyone" group chat
-const MSG_Q = `SELECT m.id,m.from_id,m.to_id,m.body,m.deleted,m.created_at,u.name,u.avatar_url FROM messages m JOIN users u ON u.id=m.from_id`;
+const MSG_Q = `SELECT m.id,m.from_id,m.to_id,m.body,m.deleted,m.att_url,m.att_type,m.att_name,m.att_size,m.created_at,u.name,u.avatar_url FROM messages m JOIN users u ON u.id=m.from_id`;
 app.get('/api/messages/:id', auth, wrap(async (req, res) => {
   const o = parseInt(req.params.id, 10) || 0;
   const rows = o === 0 ? await q(`${MSG_Q} WHERE m.to_id=0 ORDER BY m.id DESC LIMIT 200`)
@@ -227,39 +240,169 @@ app.get('/api/messages/:id', auth, wrap(async (req, res) => {
 }));
 
 app.delete('/api/messages/:id', auth, wrap(async (req, res) => {
-  const m = await one(`UPDATE messages SET body='',deleted=true WHERE id=$1 AND from_id=$2 AND NOT COALESCE(deleted,false) RETURNING id,from_id,to_id`, [parseInt(req.params.id, 10) || 0, req.uid]);
+  const m = await one(`UPDATE messages SET body='',att_url=NULL,att_type=NULL,att_name=NULL,att_size=NULL,deleted=true WHERE id=$1 AND from_id=$2 AND NOT COALESCE(deleted,false) RETURNING id,from_id,to_id`, [parseInt(req.params.id, 10) || 0, req.uid]);
   if (!m) return res.status(404).json({ error: 'Message not found, or it isn’t yours.' });
   (m.to_id === 0 ? io : io.to('u' + m.to_id).to('u' + m.from_id)).emit('message-deleted', { id: m.id });
   res.json({ ok: true });
 }));
 
+// ---------- push notifications (work even when the app is closed) ----------
+let VAPID = null;
+async function initPush() {
+  let pub = env.VAPID_PUBLIC_KEY, priv = env.VAPID_PRIVATE_KEY;
+  if (!pub || !priv) { // generate once and keep in the database so it survives restarts
+    if (!(await one(`SELECT v FROM settings WHERE k='vapid'`))) {
+      const k = webpush.generateVAPIDKeys();
+      await q(`INSERT INTO settings(k,v) VALUES('vapid',$1)`, [JSON.stringify({ pub: k.publicKey, priv: k.privateKey })]).catch(() => {});
+    }
+    ({ pub, priv } = JSON.parse((await one(`SELECT v FROM settings WHERE k='vapid'`)).v));
+  }
+  webpush.setVapidDetails('mailto:' + (env.MAIL_FROM || 'admin@example.com'), pub, priv);
+  VAPID = pub;
+}
+async function pushTo(ids, payload, opts = {}) {
+  ids = [...new Set(ids.map(Number).filter(Boolean))];
+  if (!VAPID || !ids.length) return;
+  const subs = await q(`SELECT * FROM push_subs WHERE user_id IN (${ids.join(',')})`), data = JSON.stringify(payload);
+  await Promise.all(subs.map(x => webpush.sendNotification({ endpoint: x.endpoint, keys: { p256dh: x.p256dh, auth: x.auth } }, data,
+    { TTL: opts.ttl || 3600, urgency: opts.urgency || 'normal' }).catch(e => {
+      if (e.statusCode === 404 || e.statusCode === 410) return q('DELETE FROM push_subs WHERE id=$1', [x.id]);
+      console.error('push failed', e.statusCode || e.message);
+    })));
+}
+app.post('/api/push/subscribe', auth, wrap(async (req, res) => {
+  const { endpoint, keys } = req.body || {};
+  if (typeof endpoint !== 'string' || !/^https:\/\//.test(endpoint) || !keys?.p256dh || !keys?.auth) return res.status(400).json({ error: 'Invalid subscription.' });
+  await q('DELETE FROM push_subs WHERE endpoint=$1', [endpoint]);
+  await q('INSERT INTO push_subs(user_id,endpoint,p256dh,auth) VALUES($1,$2,$3,$4)', [req.uid, endpoint, String(keys.p256dh), String(keys.auth)]);
+  res.json({ ok: true });
+}));
+app.post('/api/push/unsubscribe', auth, wrap(async (req, res) => {
+  await q('DELETE FROM push_subs WHERE endpoint=$1 AND user_id=$2', [String(req.body?.endpoint || ''), req.uid]); res.json({ ok: true });
+}));
+app.get('/api/call-config', auth, (req, res) => res.json({ iceServers: ICE }));
+
 // ---------- real-time chat + presence ----------
 io.use((s, next) => {
   try { s.uid = jwt.verify(s.handshake.auth.token, SECRET).id; next(); } catch { next(new Error('auth')); }
 });
+
+// ---- voice / group calls (signalling only; audio flows directly between phones) ----
+const ringing = new Map(); // callee id -> { from, name, avatar_url, ts }
+const inCall = new Map();  // user id -> partner id
+const gcall = { parts: new Map(), by: null, startedAt: 0 }; // Chat Room group call, max 8 people
+const gstate = () => (gcall.parts.size ? { by: gcall.by, startedAt: gcall.startedAt, parts: [...gcall.parts].map(([id, name]) => ({ id, name })) } : null);
+const who = id => one('SELECT id,name,avatar_url FROM users WHERE id=$1', [id]);
+function leaveGroup(uid) {
+  if (!gcall.parts.delete(uid)) return;
+  gcall.parts.forEach((n, id) => io.to('u' + id).emit('gcall:left', { id: uid }));
+  if (!gcall.parts.size) { gcall.by = null; gcall.startedAt = 0; }
+  io.emit('gcall:state', gstate());
+}
+
 io.on('connection', s => {
   s.join('u' + s.uid);
   const wasOnline = online.has(s.uid);
   online.set(s.uid, (online.get(s.uid) || 0) + 1);
   if (!wasOnline) io.emit('presence', { id: s.uid, online: true });
   s.emit('online-list', [...online.keys()]);
-  s.on('send', async ({ to, body } = {}, ack) => {
+  s.emit('gcall:state', gstate());
+  const r = ringing.get(s.uid); // someone is calling and this user just opened the app (e.g. from the notification)
+  if (r && Date.now() - r.ts < 44000) s.emit('call:incoming', { from: r.from, name: r.name, avatar_url: r.avatar_url });
+
+  s.on('send', async ({ to, body, att } = {}, ack) => {
     try {
       body = clean(body, 2000); to = parseInt(to, 10) || 0; // to = 0 means the Chat Room
-      if (!body || (to !== 0 && !(await one('SELECT 1 FROM users WHERE id=$1 AND verified', [to])))) return ack && ack({ error: true });
-      const { id } = await one('INSERT INTO messages(from_id,to_id,body) VALUES($1,$2,$3) RETURNING id', [s.uid, to, body]);
+      const a = att && typeof att.url === 'string' && mediaOk(att.url, 'image|video|raw') && ['audio', 'file', 'image'].includes(att.type)
+        ? { url: att.url, type: att.type, name: clean(att.name || 'File', 120), size: Math.max(0, parseInt(att.size, 10) || 0) } : null;
+      if ((!body && !a) || (to !== 0 && !(await one('SELECT 1 FROM users WHERE id=$1 AND verified', [to])))) return ack && ack({ error: true });
+      const { id } = await one('INSERT INTO messages(from_id,to_id,body,att_url,att_type,att_name,att_size) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING id',
+        [s.uid, to, body, a?.url || null, a?.type || null, a?.name || null, a?.size ?? null]);
       const m = await one(`${MSG_Q} WHERE m.id=$1`, [id]);
       (to === 0 ? io : io.to('u' + to).to('u' + s.uid)).emit('message', m);
       ack && ack({ ok: true });
+      const preview = body || (a?.type === 'audio' ? '🎤 Voice message' : a?.type === 'image' ? '📷 Photo' : a ? '📎 ' + a.name : '');
+      const ids = to === 0 ? (await q('SELECT id FROM users WHERE verified AND id<>$1', [s.uid])).map(x => x.id) : [to];
+      pushTo(ids, { title: to === 0 ? 'Chat Room' : m.name, body: (to === 0 ? m.name + ': ' : '') + preview.slice(0, 140),
+        url: to === 0 ? '/#room' : '/#chat-' + s.uid, tag: to === 0 ? 'room' : 'chat-' + s.uid, kind: 'message' }).catch(() => {});
     } catch (e) { console.error(e); ack && ack({ error: true }); }
   });
   s.on('typing', ({ to } = {}) => io.to('u' + parseInt(to, 10)).emit('typing', { from: s.uid }));
+
+  // 1-to-1 calls
+  s.on('call:invite', async ({ to } = {}, ack) => {
+    try {
+      to = parseInt(to, 10);
+      if (!to || to === s.uid || inCall.has(s.uid)) return ack && ack({ error: true });
+      if (inCall.has(to)) return ack && ack({ busy: true });
+      const me = await who(s.uid); if (!me) return ack && ack({ error: true });
+      const ring = { from: s.uid, name: me.name, avatar_url: me.avatar_url, ts: Date.now() };
+      ringing.set(to, ring);
+      io.to('u' + to).emit('call:incoming', { from: s.uid, name: me.name, avatar_url: me.avatar_url });
+      pushTo([to], { title: '📞 Incoming call', body: me.name + ' is calling you', url: '/#chat-' + s.uid, tag: 'call', kind: 'call', requireInteraction: true }, { urgency: 'high', ttl: 30 }).catch(() => {});
+      setTimeout(() => { if (ringing.get(to) === ring) { ringing.delete(to); io.to('u' + s.uid).emit('call:missed', { to }); io.to('u' + to).emit('call:cancel', { from: s.uid }); } }, 45000);
+      ack && ack({ ok: true, online: online.has(to) });
+    } catch (e) { console.error(e); ack && ack({ error: true }); }
+  });
+  s.on('call:accept', ({ to } = {}) => {
+    to = parseInt(to, 10); const r = ringing.get(s.uid);
+    if (!r || r.from !== to) return;
+    ringing.delete(s.uid); inCall.set(s.uid, to); inCall.set(to, s.uid);
+    io.to('u' + s.uid).emit('call:handled', {}); io.to('u' + to).emit('call:accepted', { from: s.uid });
+  });
+  s.on('call:reject', ({ to } = {}) => {
+    to = parseInt(to, 10); if (ringing.get(s.uid)?.from === to) ringing.delete(s.uid);
+    io.to('u' + s.uid).emit('call:handled', {}); io.to('u' + to).emit('call:rejected', { from: s.uid });
+  });
+  s.on('call:cancel', ({ to } = {}) => { // caller hung up before an answer
+    to = parseInt(to, 10); if (ringing.get(to)?.from === s.uid) ringing.delete(to);
+    io.to('u' + to).emit('call:cancel', { from: s.uid });
+  });
+  s.on('call:signal', ({ to, data } = {}) => { to = parseInt(to, 10); if (inCall.get(s.uid) === to) io.to('u' + to).emit('call:signal', { from: s.uid, data }); });
+  s.on('call:end', ({ to } = {}) => {
+    to = parseInt(to, 10); if (inCall.get(s.uid) === to) { inCall.delete(s.uid); inCall.delete(to); }
+    io.to('u' + to).emit('call:ended', { from: s.uid });
+  });
+
+  // Chat Room group call: everyone is alerted, people join by accepting
+  s.on('gcall:start', async (_, ack) => {
+    try {
+      if (gcall.parts.size) return ack && ack({ exists: true });
+      const me = await who(s.uid); if (!me) return ack && ack({ error: true });
+      gcall.by = me.name; gcall.startedAt = Date.now(); gcall.parts.set(s.uid, me.name);
+      io.emit('gcall:state', gstate());
+      const ids = (await q('SELECT id FROM users WHERE verified AND id<>$1', [s.uid])).map(x => x.id);
+      pushTo(ids, { title: '📞 Group call in Chat Room', body: me.name + ' started a group call. Tap to join.', url: '/#room', tag: 'gcall', kind: 'gcall', requireInteraction: true }, { urgency: 'high', ttl: 120 }).catch(() => {});
+      ack && ack({ ok: true });
+    } catch (e) { console.error(e); ack && ack({ error: true }); }
+  });
+  s.on('gcall:join', async (_, ack) => {
+    try {
+      if (!gcall.parts.size) return ack && ack({ error: 'ended' });
+      if (gcall.parts.has(s.uid)) return ack && ack({ error: 'already' });
+      if (gcall.parts.size >= 8) return ack && ack({ error: 'full' });
+      const me = await who(s.uid), peers = [...gcall.parts].map(([id, name]) => ({ id, name }));
+      gcall.parts.set(s.uid, me.name);
+      peers.forEach(p => io.to('u' + p.id).emit('gcall:joined', { id: s.uid, name: me.name }));
+      io.emit('gcall:state', gstate());
+      ack && ack({ ok: true, peers });
+    } catch (e) { console.error(e); ack && ack({ error: true }); }
+  });
+  s.on('gcall:signal', ({ to, data } = {}) => { to = parseInt(to, 10); if (gcall.parts.has(s.uid) && gcall.parts.has(to)) io.to('u' + to).emit('gcall:signal', { from: s.uid, data }); });
+  s.on('gcall:leave', () => leaveGroup(s.uid));
+
   s.on('disconnect', () => {
     const n = (online.get(s.uid) || 1) - 1;
-    if (n <= 0) { online.delete(s.uid); io.emit('presence', { id: s.uid, online: false }); } else online.set(s.uid, n);
+    if (n > 0) return online.set(s.uid, n);
+    online.delete(s.uid); io.emit('presence', { id: s.uid, online: false });
+    leaveGroup(s.uid);
+    const partner = inCall.get(s.uid);
+    if (partner) { inCall.delete(s.uid); inCall.delete(partner); io.to('u' + partner).emit('call:ended', { from: s.uid }); }
+    ringing.forEach((r, callee) => { if (r.from === s.uid) { ringing.delete(callee); io.to('u' + callee).emit('call:cancel', { from: s.uid }); } });
+    ringing.delete(s.uid);
   });
 });
 
 const PORT = env.PORT || 3000;
-init().then(() => server.listen(PORT, () => console.log(`Shining Star Reunion running on port ${PORT}`)))
+init().then(initPush).then(() => server.listen(PORT, () => console.log(`Shining Star Reunion running on port ${PORT}`)))
   .catch(e => { console.error('Database setup failed:', e.message); process.exit(1); });
