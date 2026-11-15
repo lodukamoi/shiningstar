@@ -3,10 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b1030">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Shining Star"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Shining Star Reunion – Alumni Community</title>
 <meta name="description" content="The official online reunion for Shining Star students. Reconnect with classmates, share memories and chat.">
 <meta property="og:title" content="Shining Star Reunion"><meta property="og:description" content="Reconnect with your Shining Star classmates.">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⭐</text></svg>">
+<link rel="icon" type="image/png" href="/icons/icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=Plus+Jakarta+Sans:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
 :root{--ink:#0b1030;--panel:#141b45;--panel2:#1c2558;--line:#2b3677;--gold:#ffc857;--sky:#8fa8ff;--text:#eef1ff;--mute:#9aa6d8;--ok:#4be3a1;--bad:#ff7a8a;
@@ -150,6 +155,23 @@ button{touch-action:manipulation}
 .unsend{display:none;margin-top:6px;background:#241a00;color:var(--gold);border-radius:10px;padding:.45rem .8rem;font-size:13px;min-height:36px}
 .m.sel .unsend{display:inline-block}
 .av.grp{background:linear-gradient(135deg,var(--gold),#ff9d4d);font-size:1.1rem}
+
+.ib{background:none;font-size:20px;width:44px;height:44px;border-radius:50%;flex:none;display:grid;place-items:center;transition:.2s}.ib:hover{background:var(--panel2)}
+.send{align-items:center;gap:.4rem}.send input{min-width:0}
+.ch .call{margin-left:auto;width:auto;padding:0 .9rem;border-radius:999px;font-size:14px;background:#4be3a122;color:var(--ok);font-weight:700}
+.send .rt{display:none;flex:1;color:var(--bad);font-weight:700}.send #rc{display:none}
+.send.recording .rt{display:block}.send.recording #rc{display:grid}.send.recording #mi,.send.recording #att,.send.recording #sendb{display:none}
+.m audio{display:block;width:230px;max-width:100%;height:40px;margin-bottom:.2rem}
+.m .ai{display:block;max-width:100%;width:240px;border-radius:12px;margin-bottom:.3rem}
+.m .fc{display:flex;align-items:center;gap:.5rem;background:#00000022;padding:.5rem .7rem;border-radius:12px;color:inherit;text-decoration:none;margin-bottom:.2rem;min-width:0}
+.fc span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:170px}.fc small{opacity:.7}
+.nb{display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;margin-bottom:1rem;border-color:var(--gold)}.nb span{flex:1;min-width:180px}.nb .btn{padding:.5rem 1rem}
+.cov{position:fixed;inset:0;z-index:60;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:calc(48px + env(safe-area-inset-top)) 1.2rem calc(40px + env(safe-area-inset-bottom));background:radial-gradient(ellipse at 50% 0,#27338a,#0b1030 70%);animation:fade .25s;text-align:center;overflow:auto}
+.cov h2{font-size:1.8rem;margin-top:1rem}.cov p{color:var(--mute)}
+.cov .parts{display:flex;flex-wrap:wrap;gap:.5rem;justify-content:center;max-width:380px;margin:1rem auto 0}.cov .parts span{background:var(--panel2);padding:.3rem .8rem;border-radius:99px;font-size:14px}
+.cbtns{display:flex;gap:2.5rem;align-items:flex-start}
+.cb2{width:68px;height:68px;border-radius:50%;font-size:26px;display:grid;place-items:center;color:#fff;background:var(--panel2)}.cb2.on{background:#fff;color:#111}.cb2.go{background:#22c55e;animation:pulse 1.4s infinite}.cb2.no{background:#ef4444}
+.cbtns .lab{display:block;font-size:12px;color:var(--mute);margin-top:.4rem}
 </style>
 </head>
 <body>
@@ -261,7 +283,7 @@ $('#next').onclick=async()=>{
 $('#login').onsubmit=async e=>{e.preventDefault();try{enter(await api('/login',{method:'POST',body:Object.fromEntries(new FormData(e.target))}))}catch(x){if(x.data?.needsVerify)askCode(x.data.email,'email','verify');else $('#login .err').textContent=x.message}};
 
 let pend={},cfg={};
-fetch('/api/config').then(r=>r.json()).then(c=>{cfg=c;$$('.smsOnly').forEach(x=>x.classList.toggle('hidden',!c.sms))}).catch(()=>{});
+const cfgReady=fetch('/api/config').then(r=>r.json()).then(c=>{cfg=c;$$('.smsOnly').forEach(x=>x.classList.toggle('hidden',!c.sms))}).catch(()=>{});
 function showForm(id){['login','reg','verify','forgot','reset'].forEach(f=>$('#'+f).classList.toggle('hidden',f!==id));
  $('#tabs').classList.toggle('hidden',!['login','reg'].includes(id));$('#tabs').classList.toggle('reg',id==='reg');
  $$('#tabs button').forEach(x=>x.classList.toggle('on',x.dataset.t===id));$$('.err').forEach(e=>e.textContent='')}
@@ -285,7 +307,10 @@ async function upload(file){
  const d=await r.json();if(!r.ok)throw new Error(d.error?.message||'Upload failed.');return{url:d.secure_url,type:img?'image':'video'}}
 function refreshMe(){$('#meAv').outerHTML=av(me,'sm').replace('class="av sm"','class="av sm" id="meAv"')}
 function enter(d){token=d.token;localStorage.setItem('ss_token',token);start(d.user)}
-function logout(){localStorage.removeItem('ss_token');token=null;socket&&socket.disconnect();location.reload()}
+async function logout(){if(loggingOut)return;loggingOut=true;
+ try{if(call)hangup();const reg=await navigator.serviceWorker?.getRegistration(),sub=await reg?.pushManager.getSubscription();
+  if(sub){await api('/push/unsubscribe',{method:'POST',body:{endpoint:sub.endpoint}}).catch(()=>{});await sub.unsubscribe().catch(()=>{})}}catch{}
+ localStorage.removeItem('ss_token');token=null;socket&&socket.disconnect();location.reload()}
 $('#out').onclick=logout;
 
 // ---------- app ----------
@@ -305,8 +330,9 @@ async function start(user){
   else if(m.from_id!==me.id){unread[other]=(unread[other]||0)+1;renderList();toast(other===0?'New message in Chat Room':'New message from '+(users.find(u=>u.id===other)?.name||'a classmate'))}});
  socket.on('message-deleted',({id})=>{const el=$(`#msgs [data-id="${id}"]`);if(!el)return;
   const t=el.querySelector('time')?.outerHTML||'',mn=el.querySelector('.mn')?.outerHTML||'';el.classList.remove('sel');el.classList.add('gone');el.innerHTML=mn+'🚫 <i>This message was deleted</i>'+t});
+ wireCalls();
  socket.on('typing',({from})=>{if(active?.id===from){$('#typing').textContent=active.name.split(' ')[0]+' is typing…';clearTimeout(typingT);typingT=setTimeout(()=>$('#typing').textContent='',1800)}});
- [users]=[await api('/users')];renderList();loadPosts();
+ [users]=[await api('/users')];renderList();loadPosts();afterStart();
 }
 $$('.nav button').forEach(b=>b.onclick=()=>{const v=b.dataset.v;$$('.nav button').forEach(x=>x.classList.toggle('on',x.dataset.v===v));$('#home').classList.toggle('hidden',v!=='home');$('#chatV').classList.toggle('hidden',v==='home');if(v==='room')openChat(0);window.scrollTo(0,0)});
 $('#meBtn').onclick=()=>profile(me);
@@ -351,33 +377,184 @@ function renderList(){const q=$('#q').value.toLowerCase();
 $('#q').oninput=renderList;
 $('#list').onclick=e=>{const b=e.target.closest('.u');if(b)openChat(+b.dataset.id)};
 async function openChat(id){active=id===0?GROUP:users.find(u=>u.id===id);if(!active)return;unread[id]=0;$('#chat').classList.add('open');renderList();
- $('#conv').innerHTML=`<div class="ch" id="head"></div><div class="msgs" id="msgs"></div><div class="typing" id="typing"></div><form class="send" id="sf"><input id="mi" placeholder="Type a message" autocomplete="off" maxlength="2000"><button class="btn">Send</button></form>`;
- renderHead();$('#head').onclick=e=>{if(e.target.closest('.back')||active?.group)return;profile(active)};
+ $('#conv').innerHTML=`<div class="ch" id="head"></div><div class="msgs" id="msgs"></div><div class="typing" id="typing"></div><form class="send" id="sf"><button type="button" class="ib" id="att" aria-label="Attach a file">📎</button><button type="button" class="ib" id="rc" aria-label="Cancel recording">🗑</button><input id="mi" placeholder="Type a message" autocomplete="off" maxlength="2000"><span class="rt" id="rt"></span><button type="button" class="ib" id="mic" aria-label="Record a voice message">🎤</button><button class="btn" id="sendb">Send</button></form><input type="file" id="cf" hidden>`;
+ if(rec)stopRec(false);renderHead();$('#head').onclick=e=>{if(e.target.closest('.call')){active.group?startGroupCall():startCall(active);return}if(e.target.closest('.back')||active?.group)return;profile(active)};
  const ms=await api('/messages/'+id);if(active?.id!==id)return;
  $('#msgs').innerHTML=ms.length?'':'<div class="none">'+(active.group?'Start the conversation with everyone 👋':'Say hello to '+esc(active.name.split(' ')[0])+' 👋')+'</div>';ms.forEach(addMsg);
  $('#msgs').onclick=e=>{const b=e.target.closest('.m.me:not(.gone)');if(!b)return;
   if(e.target.closest('.unsend')){if(confirm('Unsend this message? It will be removed for everyone.'))api('/messages/'+b.dataset.id,{method:'DELETE'}).catch(x=>toast(x.message));return}
   $$('.m.sel').forEach(x=>x!==b&&x.classList.remove('sel'));b.classList.toggle('sel')};
  $('#mi').oninput=()=>{if(!active?.group)socket.emit('typing',{to:id})};
- $('#sf').onsubmit=e=>{e.preventDefault();const v=$('#mi').value.trim();if(!v)return;socket.emit('send',{to:id,body:v},r=>r?.error&&toast('Message not sent'));$('#mi').value=''};$('#mi').focus()}
+ $('#sf').onsubmit=e=>{e.preventDefault();const v=$('#mi').value.trim();if(!v)return;socket.emit('send',{to:id,body:v},r=>r?.error&&toast('Message not sent'));$('#mi').value=''};$('#mi').focus();wireComposer(id)}
 function renderHead(){const g=active.group,on=users.filter(u=>u.online).length+1;
- $('#head').innerHTML=`<button class="back" type="button" onclick="event.stopPropagation();$('#chat').classList.remove('open');active=null;renderList()">‹</button>${g?grpAv(''):av(active,'',true)}<div><b>${esc(active.name)}</b><br><small class="${g||active.online?'on':''}">${g?on+' online':active.online?'Online · tap to view profile':'Offline · tap to view profile'}</small></div>`}
+ $('#head').innerHTML=`<button class="back" type="button" onclick="event.stopPropagation();stopRec(false);$('#chat').classList.remove('open');active=null;renderList()">‹</button>${g?grpAv(''):av(active,'',true)}<div><b>${esc(active.name)}</b><br><small class="${g||active.online?'on':''}">${g?on+' online':active.online?'Online · tap to view profile':'Offline · tap to view profile'}</small></div><button class="ib call" type="button" aria-label="${g?'Group call':'Call'}">📞${g?(gstate?' Join call':' Group call'):''}</button>`}
 function addMsg(m){const box=$('#msgs');box.querySelector('.none')?.remove();const mine=m.from_id===me.id;
  const who=active.group&&!mine?`<span class="mn" style="--h:${hue(m.name||'')}">${esc(m.name||'Student')}</span>`:'';
- box.insertAdjacentHTML('beforeend',`<div class="m ${mine?'me':''} ${m.deleted?'gone':''}" data-id="${m.id}">${who}${m.deleted?'🚫 <i>This message was deleted</i>':esc(m.body)}<time>${hm(m.created_at)}</time>${mine&&!m.deleted?'<button class="unsend" type="button">🗑 Unsend</button>':''}</div>`);box.scrollTop=box.scrollHeight}
+ box.insertAdjacentHTML('beforeend',`<div class="m ${mine?'me':''} ${m.deleted?'gone':''}" data-id="${m.id}">${who}${m.deleted?'🚫 <i>This message was deleted</i>':attHtml(m)+esc(m.body)}<time>${hm(m.created_at)}</time>${mine&&!m.deleted?'<button class="unsend" type="button">🗑 Unsend</button>':''}</div>`);box.scrollTop=box.scrollHeight}
 
 // profile
 async function openProfile(id){if(id===me.id)return profile(me);profile(users.find(u=>u.id===id)||await api('/users/'+id))}
 function profile(u){const w=u.status==='occupation';
- $('#modal').innerHTML=`<div class="modal" id="mb"><div class="card sheet" role="dialog" aria-label="Profile"><button class="x" aria-label="Close">×</button>${av(u,'lg')}<h2>${esc(u.name)}</h2>${u.id===me.id?'<label class="btn ghost chg">Change photo<input type="file" id="avf" accept="image/*" hidden></label> <button class="btn ghost chg" id="lo" type="button">Log out</button><br>':''}
+ $('#modal').innerHTML=`<div class="modal" id="mb"><div class="card sheet" role="dialog" aria-label="Profile"><button class="x" aria-label="Close">×</button>${av(u,'lg')}<h2>${esc(u.name)}</h2>${u.id===me.id?'<label class="btn ghost chg">Change photo<input type="file" id="avf" accept="image/*" hidden></label> <button class="btn ghost chg" id="lo" type="button">Log out</button><br><button class="btn ghost chg" id="ntf" type="button">🔔 Notifications</button> <button class="btn ghost chg" id="inst" type="button">📲 Install app</button><br>':''}
  ${u.id===me.id?'<span class="st">This is you</span>':`<span class="st ${u.online?'on':''}"><i></i>${u.online?'Online now':'Offline'}</span>`}
  <dl><dt>Joined Shining Star</dt><dd>${u.join_year} · ${esc(u.join_class)}</dd><dt>Left Shining Star</dt><dd>${u.left_year} · ${esc(u.left_class)}</dd>
  <dt>${w?'Occupation':'Studying'}</dt><dd>${esc(u.detail)}</dd><dt>Contact</dt><dd>${esc(u.contact)}</dd><dt>Email</dt><dd>${esc(u.email)}</dd></dl></div></div>`;
  $('#lo')?.addEventListener('click',logout);
+ $('#ntf')?.addEventListener('click',()=>enablePush().then(()=>toast('Notifications are on 🔔')).catch(x=>toast(x.message)));
+ $('#inst')?.addEventListener('click',()=>{if(standalone())toast('The app is already installed ✅');else if(deferredInstall){deferredInstall.prompt();deferredInstall=null}else toast('iPhone: tap Share, then “Add to Home Screen”. Android: browser menu, then “Install app”.')});
  $('#avf')?.addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;
   try{if(!f.type.startsWith('image/'))throw new Error('Choose a photo.');toast('Uploading…');const up=await upload(f);me=await api('/me/avatar',{method:'PUT',body:{url:up.url}});refreshMe();profile(me)}catch(x){toast(x.message)}});
  $('#mb').onclick=e=>{if(e.target.id==='mb'||e.target.className==='x')$('#modal').innerHTML=''}}
 document.addEventListener('keydown',e=>e.key==='Escape'&&($('#modal').innerHTML=''));
+
+
+// ---------- install + notifications ----------
+let deferredInstall=null,loggingOut=false,ice=[{urls:'stun:stun.l.google.com:19302'}];
+const standalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone;
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e});
+if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js').catch(()=>{});
+ navigator.serviceWorker.addEventListener('message',e=>{if(e.data&&e.data.open!==undefined){location.hash=e.data.open;routeHash()}})}
+const b64=s=>{const r=atob((s+'='.repeat((4-s.length%4)%4)).replace(/-/g,'+').replace(/_/g,'/'));return Uint8Array.from(r,c=>c.charCodeAt(0))};
+async function enablePush(){
+ if(!('serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window))throw new Error('On iPhone, first tap Share, then “Add to Home Screen”, and open the app from there.');
+ await cfgReady;if(!cfg.vapid)throw new Error('Notifications are not ready yet. Try again in a minute.');
+ if(Notification.permission!=='granted'&&await Notification.requestPermission()!=='granted')throw new Error('Notifications are blocked. Allow them in your browser or phone settings.');
+ const reg=await navigator.serviceWorker.ready;
+ const sub=await reg.pushManager.getSubscription()||await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64(cfg.vapid)});
+ await api('/push/subscribe',{method:'POST',body:sub.toJSON()})}
+function routeHash(){const h=location.hash;if(!h)return;history.replaceState(null,'',location.pathname);
+ if(h==='#room')$('.tabbar [data-v=room]').click();
+ else if(h.startsWith('#chat-')){const id=+h.slice(6);if(users.some(u=>u.id===id)){$('.tabbar [data-v=chat]').click();openChat(id)}}}
+async function afterStart(){
+ await cfgReady;try{ice=(await api('/call-config')).iceServers}catch{}
+ routeHash();
+ const banner=(t,act)=>{$('#home').insertAdjacentHTML('afterbegin',`<div class="card nb" id="nb"><span>${t}</span>${act?'<button class="btn" id="nbOn">Turn on</button>':''}<button class="btn ghost" id="nbNo">Not now</button></div>`);
+  $('#nbNo').onclick=()=>{localStorage.ss_nb=1;$('#nb').remove()};if(act)$('#nbOn').onclick=act};
+ if('Notification' in window&&'PushManager' in window){
+  if(Notification.permission==='granted')enablePush().catch(()=>{});
+  else if(Notification.permission==='default'&&!localStorage.ss_nb)banner('🔔 Get notified when classmates message or call you, even when the app is closed.',()=>enablePush().then(()=>{$('#nb')?.remove();toast('Notifications are on 🔔')}).catch(x=>toast(x.message)));
+ }else if(!standalone()&&/iphone|ipad/i.test(navigator.userAgent)&&!localStorage.ss_nb)banner('📲 On iPhone: tap Share, then “Add to Home Screen” to install the app and get notifications.')}
+
+// ---------- chat: files and voice notes ----------
+const fmtSize=n=>!n?'':n<1048576?Math.max(1,Math.round(n/1024))+' KB':(n/1048576).toFixed(1)+' MB';
+const attHtml=m=>{if(!m.att_url)return'';const u=esc(m.att_url);
+ if(m.att_type==='audio')return`<audio controls preload="metadata"><source src="${u.replace(/\.\w+$/,'.mp3')}" type="audio/mpeg"><source src="${u}"></audio>`;
+ if(m.att_type==='image')return`<a href="${u}" target="_blank" rel="noopener"><img class="ai" src="${u}" alt="Photo" loading="lazy"></a>`;
+ return`<a class="fc" href="${u}" target="_blank" rel="noopener">📎 <span>${esc(m.att_name||'File')}</span><small>${fmtSize(m.att_size)}</small></a>`};
+async function uploadAny(blob,name,kind){
+ if(!cfg.cloud)throw new Error('File uploads are not set up yet.');
+ if(blob.size>20*1048576)throw new Error('Files must be under 20 MB.');
+ const fd=new FormData();fd.append('file',blob,name);fd.append('upload_preset',cfg.preset);
+ const r=await fetch(`https://api.cloudinary.com/v1_1/${cfg.cloud}/${kind==='image'?'image':kind==='audio'?'video':'raw'}/upload`,{method:'POST',body:fd});
+ const d=await r.json();if(!r.ok)throw new Error(d.error?.message||'Upload failed.');return d.secure_url}
+let rec=null;
+function wireComposer(id){
+ const send=att=>{const v=$('#mi').value.trim();if(!v&&!att)return;socket.emit('send',{to:id,body:v,att},r=>r?.error&&toast('Message not sent'));$('#mi').value=''};
+ $('#sf').onsubmit=e=>{e.preventDefault();if(!rec)send()};
+ $('#att').onclick=()=>$('#cf').click();
+ $('#cf').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;
+  try{toast('Uploading…');const kind=f.type.startsWith('image/')?'image':'file';send({url:await uploadAny(f,f.name,kind),type:kind,name:f.name,size:f.size})}catch(x){toast(x.message)}};
+ $('#rc').onclick=()=>stopRec(false);
+ $('#mic').onclick=()=>rec?stopRec(true):startRec(send)}
+async function startRec(done){
+ if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder)return toast('Voice messages are not supported on this browser.');
+ let stream;try{stream=await navigator.mediaDevices.getUserMedia({audio:true})}catch{return toast('Allow microphone access to record.')}
+ const mime=['audio/webm;codecs=opus','audio/webm','audio/mp4','audio/ogg'].find(t=>MediaRecorder.isTypeSupported(t))||'';
+ const mr=new MediaRecorder(stream,mime?{mimeType:mime}:{}),chunks=[],t0=Date.now();let keep=true,tick;
+ mr.ondataavailable=e=>e.data.size&&chunks.push(e.data);
+ mr.onstop=async()=>{stream.getTracks().forEach(t=>t.stop());clearInterval(tick);rec=null;$('#sf')?.classList.remove('recording');if($('#mic'))$('#mic').textContent='🎤';
+  if(!keep||!chunks.length)return;if(Date.now()-t0<700)return toast('Hold on a little longer to record.');
+  const type=mr.mimeType||'audio/webm',ext=type.includes('mp4')?'m4a':type.includes('ogg')?'ogg':'webm',blob=new Blob(chunks,{type});
+  try{toast('Sending voice message…');done({url:await uploadAny(blob,'voice-'+Date.now()+'.'+ext,'audio'),type:'audio',name:'Voice message',size:blob.size})}catch(x){toast(x.message)}};
+ rec={mr,cancel:()=>keep=false};mr.start();$('#sf').classList.add('recording');$('#mic').textContent='➤';
+ tick=setInterval(()=>{const s=Math.floor((Date.now()-t0)/1000);$('#rt').textContent='🔴 '+Math.floor(s/60)+':'+String(s%60).padStart(2,'0');if(s>=300)stopRec(true)},500)}
+function stopRec(keep){if(!rec)return;if(!keep)rec.cancel();rec.mr.stop()}
+
+// ---------- voice calls (1-to-1 and Chat Room group call) ----------
+let call=null,gstate=null,incoming=null,dismissedG=0,ringTimer=null;
+const fmtT=s=>Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
+function beep(on){clearInterval(ringTimer);if(!on)return;
+ const tick=()=>{try{const c=beep.c=beep.c||new(window.AudioContext||window.webkitAudioContext)(),o=c.createOscillator(),g=c.createGain();o.frequency.value=470;g.gain.value=.07;o.connect(g);g.connect(c.destination);o.start();o.stop(c.currentTime+.35)}catch{}navigator.vibrate?.([300,150,300])};
+ tick();ringTimer=setInterval(tick,1600)}
+const getMic=()=>navigator.mediaDevices?.getUserMedia?navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}}):Promise.reject(new Error('Calls need a newer browser.'));
+const micErr=x=>toast(x.name==='NotAllowedError'?'Allow microphone access to make calls.':x.message||'Could not start the call.');
+const overlay=html=>{closeOverlay();document.body.insertAdjacentHTML('beforeend','<div class="cov" id="cov" role="dialog">'+html+'</div>')};
+function closeOverlay(){beep(false);$('#cov')?.remove()}
+const setStatus=t=>{const e=$('#cs');if(e)e.textContent=t};
+function renderParts(){const e=$('#cparts');if(!e||call?.mode!=='g')return;e.innerHTML=(gstate?.parts||[]).map(p=>`<span>${p.id===me.id?'You':esc(p.name)}</span>`).join('')}
+function showIncoming(kind,d){
+ if(call)return;incoming={kind,...d};const g=kind==='group';
+ overlay(`<div><div style="margin-top:2rem">${g?grpAv('lg'):av({name:d.name,avatar_url:d.avatar_url},'lg')}</div><h2>${g?'Chat Room group call':esc(d.name)}</h2><p>${g?esc(d.name)+' started a group call':'Incoming voice call…'}</p></div><div></div>
+ <div class="cbtns"><div><button class="cb2 no" id="cdec" aria-label="Decline">✖</button><span class="lab">${g?'Not now':'Decline'}</span></div><div><button class="cb2 go" id="cacc" aria-label="Accept">📞</button><span class="lab">${g?'Join':'Accept'}</span></div></div>`);
+ beep(true);
+ $('#cdec').onclick=()=>{if(g)dismissedG=d.startedAt;else socket.emit('call:reject',{to:d.from});incoming=null;closeOverlay()};
+ $('#cacc').onclick=()=>{incoming=null;closeOverlay();g?joinGroup():acceptCall(d)}}
+function showCallUi(title,status){
+ overlay(`<div><div style="margin-top:2rem">${call.mode==='g'?grpAv('lg'):av({name:call.name,avatar_url:call.avatar},'lg')}</div><h2>${esc(title)}</h2><p id="cs">${esc(status)}</p><div class="parts" id="cparts"></div></div><div id="cau"></div>
+ <div class="cbtns"><div><button class="cb2" id="cmute" aria-label="Mute">🎤</button><span class="lab">Mute</span></div><div><button class="cb2 no" id="cend" aria-label="End call">📵</button><span class="lab">End</span></div></div>`);
+ $('#cmute').onclick=()=>{call.muted=!call.muted;call.stream.getAudioTracks().forEach(t=>t.enabled=!call.muted);$('#cmute').classList.toggle('on',call.muted);$('#cmute').textContent=call.muted?'🔇':'🎤'};
+ $('#cend').onclick=hangup;renderParts()}
+function armGuard(){clearTimeout(call.guard);call.guard=setTimeout(()=>{if(call&&!call.t0){hangup();toast('Could not connect. Calls can fail on some mobile networks.')}},25000)}
+function markConnected(){if(!call||call.t0)return;clearTimeout(call.guard);call.t0=Date.now();setStatus('0:00');call.timer=setInterval(()=>setStatus(fmtT(Math.floor((Date.now()-call.t0)/1000))),1000)}
+function makePc(id,ev){
+ const pc=new RTCPeerConnection({iceServers:ice});call.pcs[id]=pc;
+ call.stream.getTracks().forEach(t=>pc.addTrack(t,call.stream));
+ pc.onicecandidate=e=>e.candidate&&socket.emit(ev,{to:id,data:{ice:e.candidate}});
+ pc.ontrack=e=>{let a=$('#au'+id);if(!a){a=document.createElement('audio');a.id='au'+id;a.autoplay=true;a.setAttribute('playsinline','');$('#cau')?.append(a)}a.srcObject=e.streams[0]};
+ pc.onconnectionstatechange=()=>{if(pc.connectionState==='connected')markConnected();
+  else if(pc.connectionState==='failed'){if(call?.mode==='1'){hangup();toast('Connection lost. Calls can fail on some mobile networks.')}else peerGone(id)}};
+ return pc}
+function peerGone(id){const pc=call?.pcs[id];if(pc){pc.close();delete call.pcs[id]}$('#au'+id)?.remove()}
+function endLocal(msg){if(!call)return;clearInterval(call.timer);clearTimeout(call.guard);Object.keys(call.pcs).forEach(peerGone);call.stream.getTracks().forEach(t=>t.stop());call=null;closeOverlay();if(msg)toast(msg);if(active?.group)renderHead()}
+function hangup(){if(!call)return;if(call.mode==='g'){dismissedG=gstate?.startedAt||dismissedG;socket.emit('gcall:leave')}else socket.emit(call.connected?'call:end':'call:cancel',{to:call.peer});endLocal()}
+async function onSignal(from,data,ev){
+ if(!call||!data)return;let pc=call.pcs[from];
+ try{if(data.sdp){pc=pc||makePc(from,ev);await pc.setRemoteDescription(data.sdp);
+   for(const c of call.q[from]||[])await pc.addIceCandidate(c).catch(()=>{});call.q[from]=[];
+   if(data.sdp.type==='offer'){const a=await pc.createAnswer();await pc.setLocalDescription(a);socket.emit(ev,{to:from,data:{sdp:pc.localDescription}})}}
+  else if(data.ice){if(pc?.remoteDescription)await pc.addIceCandidate(data.ice).catch(()=>{});else(call.q[from]=call.q[from]||[]).push(data.ice)}}catch(e){console.error(e)}}
+async function startCall(u){
+ if(call)return toast('You are already in a call.');
+ let stream;try{stream=await getMic()}catch(x){return micErr(x)}
+ call={mode:'1',peer:u.id,name:u.name,avatar:u.avatar_url,pcs:{},q:{},stream,connected:false};
+ showCallUi(u.name,u.online?'Calling…':'Calling… they’re offline, so we sent a notification');
+ socket.emit('call:invite',{to:u.id},r=>{if(r?.busy)endLocal(u.name.split(' ')[0]+' is on another call.');else if(r?.error)endLocal('Could not place the call.')})}
+async function acceptCall(d){
+ let stream;try{stream=await getMic()}catch(x){socket.emit('call:reject',{to:d.from});return micErr(x)}
+ call={mode:'1',peer:d.from,name:d.name,avatar:d.avatar_url,pcs:{},q:{},stream,connected:true};
+ showCallUi(d.name,'Connecting…');armGuard();socket.emit('call:accept',{to:d.from})}
+async function startGroupCall(){
+ if(call)return toast('You are already in a call.');
+ if(gstate)return joinGroup();
+ let stream;try{stream=await getMic()}catch(x){return micErr(x)}
+ socket.emit('gcall:start',null,r=>{
+  if(r?.exists){stream.getTracks().forEach(t=>t.stop());return joinGroup()}
+  if(!r?.ok){stream.getTracks().forEach(t=>t.stop());return toast('Could not start the call.')}
+  call={mode:'g',pcs:{},q:{},stream,connected:true};showCallUi('Chat Room group call','Waiting for others to join…')})}
+async function joinGroup(){
+ if(call)return;let stream;try{stream=await getMic()}catch(x){return micErr(x)}
+ socket.emit('gcall:join',null,async r=>{
+  if(!r?.ok){stream.getTracks().forEach(t=>t.stop());return toast(r?.error==='full'?'The call is full (8 people maximum).':'That call has ended.')}
+  call={mode:'g',pcs:{},q:{},stream,connected:true};showCallUi('Chat Room group call',r.peers.length?'Connecting…':'Waiting for others to join…');
+  if(r.peers.length)armGuard();
+  for(const p of r.peers){const pc=makePc(p.id,'gcall:signal');await pc.setLocalDescription(await pc.createOffer());socket.emit('gcall:signal',{to:p.id,data:{sdp:pc.localDescription}})}})}
+function wireCalls(){
+ socket.on('call:incoming',d=>{if(incoming?.from===d.from)return;if(call||incoming)return socket.emit('call:reject',{to:d.from});showIncoming('call',d)});
+ socket.on('call:handled',()=>{if(incoming?.kind==='call'){incoming=null;closeOverlay()}});
+ socket.on('call:cancel',({from})=>{if(incoming?.kind==='call'&&incoming.from===from){incoming=null;closeOverlay();toast('Missed call')}});
+ socket.on('call:accepted',async({from})=>{if(call?.peer!==from)return;call.connected=true;setStatus('Connecting…');armGuard();
+  const pc=makePc(from,'call:signal');await pc.setLocalDescription(await pc.createOffer());socket.emit('call:signal',{to:from,data:{sdp:pc.localDescription}})});
+ socket.on('call:rejected',({from})=>{if(call?.peer===from)endLocal('Call declined.')});
+ socket.on('call:missed',()=>{if(call&&!call.connected)endLocal('No answer.')});
+ socket.on('call:ended',({from})=>{if(call?.peer===from)endLocal('Call ended.')});
+ socket.on('call:signal',({from,data})=>onSignal(from,data,'call:signal'));
+ socket.on('gcall:state',st=>{gstate=st;
+  if(st&&!call&&!incoming&&st.startedAt!==dismissedG&&!st.parts.some(p=>p.id===me.id))showIncoming('group',{name:st.by,startedAt:st.startedAt});
+  if(!st&&incoming?.kind==='group'){incoming=null;closeOverlay()}
+  if(!st&&call?.mode==='g')endLocal('The group call ended.');
+  renderParts();if(active?.group)renderHead();renderList()});
+ socket.on('gcall:left',({id})=>peerGone(id));
+ socket.on('gcall:signal',({from,data})=>onSignal(from,data,'gcall:signal'))}
 
 // boot
 (async()=>{if(token){try{return start(await api('/me'))}catch{}}$('#auth').classList.remove('hidden')})();
